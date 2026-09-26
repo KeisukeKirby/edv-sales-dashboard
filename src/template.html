@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EDV 販売実績ダッシュボード</title>
+<style>
+:root{
+  --bg:#0F1B14;
+  --panel:#16241C;
+  --panel-2:#1C2E23;
+  --line:#2A3E31;
+  --ink:#EDF3EC;
+  --ink-dim:#AFC4B6;
+  --ink-faint:#7E9587;
+  --accent:#E8A33D;
+  --danger:#C4674F;
+  /* channel families (validated: dataviz validate_palette.js, dark, surface #16241C) */
+  --g-store:#3987e5;
+  --g-online:#d95926;
+  --g-event:#199e70;
+  --g-consignment:#c98500;
+  --g-other:#9085e9;
+  --other-gray:#7E9587;
+  --sans:"Noto Sans JP","Noto Sans Thai",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic","Leelawadee UI",sans-serif;
+  --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Roboto Mono",monospace;
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:radial-gradient(1200px 500px at 10% -10%, rgba(232,163,61,0.07), transparent), var(--bg);
+  color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;padding:32px 20px 60px;
+}
+.wrap{max-width:1180px;margin:0 auto;}
+header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:12px;flex-wrap:wrap;gap:16px;}
+.eyebrow{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.12em;color:var(--accent);text-transform:uppercase;margin-bottom:6px;}
+h1{margin:0;font-size:28px;font-weight:700;}
+.period{font-family:var(--mono);color:var(--ink-dim);font-size:13px;line-height:1.7;margin:6px 0 22px;}
+.period b{color:var(--ink);}
+.lang-toggle{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;}
+.lang-btn{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink-dim);background:transparent;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;}
+.lang-btn:hover{color:var(--ink);}
+.lang-btn.active{background:var(--accent);color:#16241C;}
+.lang-btn:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+nav.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:26px;overflow-x:auto;}
+nav.tabs button{background:none;border:none;padding:11px 16px;font-size:13.5px;font-family:var(--mono);font-weight:600;color:var(--ink-dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+nav.tabs button.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab{display:none;}
+.tab.active{display:block;}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:22px;}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.card-head h2{margin:0;font-size:16px;font-weight:700;}
+.card-head h2 .num{font-family:var(--mono);color:var(--accent);margin-right:8px;font-size:13px;}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+select,.seg button{font-family:var(--sans);font-size:13px;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:6px 10px;}
+select{cursor:pointer;max-width:100%;}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;}
+.seg button{border:none;border-radius:0;cursor:pointer;color:var(--ink-dim);background:var(--panel-2);}
+.seg button.active{background:var(--accent);color:#16241C;font-weight:700;}
+.note{color:var(--ink-faint);font-size:12.5px;margin:10px 0 0;}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+.kpi .lbl{font-size:12.5px;color:var(--ink-dim);}
+.kpi .val{font-size:30px;font-weight:700;line-height:1.25;margin-top:4px;}
+.kpi .unit{font-size:13px;color:var(--ink-dim);font-weight:500;margin-left:4px;}
+.kpi .sub{font-size:12px;color:var(--ink-faint);margin-top:2px;}
+.bars{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
+.hbar{display:grid;grid-template-columns:96px 1fr 44px;gap:8px;align-items:center;font-size:11.5px;color:var(--ink-dim);}
+.hbar .track{height:7px;background:var(--line);border-radius:4px;overflow:hidden;}
+.hbar .fill{height:100%;border-radius:4px;}
+.hbar .pct{text-align:right;font-family:var(--mono);}
+.chart{position:relative;width:100%;}
+.chart svg{display:block;width:100%;height:auto;overflow:visible;}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-dim);margin-bottom:10px;}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;}
+.axis text{fill:var(--ink-faint);font-size:11px;font-family:var(--mono);}
+.axis line.grid{stroke:var(--line);stroke-width:1;}
+.axis line.base{stroke:#3a5243;stroke-width:1;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;}
+th{color:var(--ink-dim);font-weight:600;font-size:12px;}
+th:first-child,td:first-child{text-align:left;}
+td{font-variant-numeric:tabular-nums;}
+tr.total td{font-weight:700;border-top:1px solid var(--ink-faint);}
+tr.hl td{background:rgba(232,163,61,.10);}
+tr.sub td{color:var(--ink-faint);}
+th.sortable{cursor:pointer;user-select:none;}
+th.sortable:hover{color:var(--ink);}
+th .arrow{color:var(--accent);}
+.tbl-scroll{overflow-x:auto;}
+.name-cell{display:inline-flex;align-items:center;gap:8px;}
+.split{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:24px;align-items:center;}
+.donut path{cursor:pointer;transition:opacity .15s;}
+.donut.dim path:not(.on){opacity:.28;}
+.btn-more{margin-top:12px;background:none;border:1px solid var(--line);color:var(--ink-dim);border-radius:7px;padding:7px 14px;cursor:pointer;font-size:13px;}
+.btn-more:hover{color:var(--ink);border-color:var(--accent);}
+.tip{position:fixed;pointer-events:none;background:#0B140F;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.4);z-index:50;display:none;max-width:280px;}
+.tip .t{font-weight:700;margin-bottom:4px;}
+.tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums;}
+.tip .r span:first-child{display:inline-flex;align-items:center;gap:6px;color:var(--ink-dim);}
+.about h3{font-size:15px;margin:18px 0 8px;}
+.about h3:first-child{margin-top:0;}
+.about p,.about li{color:var(--ink-dim);font-size:13.5px;}
+.about ul{padding-left:20px;margin:6px 0;}
+.about td,.about th{white-space:normal;}
+.warn{border-left:3px solid var(--accent);background:var(--panel-2);padding:10px 14px;border-radius:6px;color:var(--ink-dim);font-size:13.5px;}
+@media (max-width:820px){
+  .kpis{grid-template-columns:repeat(2,1fr);}
+  .split{grid-template-columns:1fr;}
+}
+@media (max-width:520px){
+  body{padding:20px 16px 48px;}
+  h1{font-size:22px;}
+  .kpis{grid-template-columns:1fr;}
+  .kpi .val{font-size:26px;}
+  section.card{padding:16px 14px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Endeavors Co., Ltd. · EDV</div>
+      <h1 data-i18n="title"></h1>
+    </div>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button class="lang-btn" data-lang="ja">日本語</button>
+      <button class="lang-btn" data-lang="en">English</button>
+      <button class="lang-btn" data-lang="th">ไทย</button>
+    </div>
+  </header>
+  <div class="period" id="periodLine"></div>
+
+  <nav class="tabs" role="tablist">
+    <button data-tab="overview" class="active" data-i18n="tab_overview"></button>
+    <button data-tab="channels" data-i18n="tab_channels"></button>
+    <button data-tab="products" data-i18n="tab_products"></button>
+    <button data-tab="about" data-i18n="tab_about"></button>
+  </nav>
+
+  <!-- ============ overview ============ -->
+  <div class="tab active" id="tab-overview">
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">01</span><span data-i18n="s_summary"></span></h2>
+        <div class="controls"><select id="kpiPeriod"></select></div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <p class="note" data-i18n="note_exvat"></p>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">02</span><span data-i18n="s_monthly"></span></h2>
+        <div class="controls">
+          <div class="seg" id="monthlyMetric">
+            <button data-v="amt" class="active" data-i18n="m_amount"></button>
+            <button data-v="qty" data-i18n="m_qty"></button>
+          </div>
+        </div>
+      </div>
+      <div class="legend" id="monthlyLegend"></div>
+      <div class="chart" id="monthlyChart"></div>
+      <button class="btn-more" id="monthlyDetailBtn" data-i18n="show_detail"></button>
+      <div class="tbl-scroll" id="monthlyDetail" hidden></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">03</span><span data-i18n="s_share"></span></h2>
+        <div class="controls">
+          <select id="sharePeriod"></select>
+          <div class="seg" id="shareMetric">
+            <button data-v="amt" class="active" data-i18n="m_amount"></button>
+            <button data-v="qty" data-i18n="m_qty"></button>
+          </div>
+        </div>
+      </div>
+      <div class="split">
+        <div class="chart" id="shareDonut"></div>
+        <div class="tbl-scroll" id="shareTable"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ channels ============ -->
+  <div class="tab" id="tab-channels">
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">01</span><span data-i18n="s_chtable"></span></h2>
+        <div class="controls"><select id="chtPeriod"></select></div>
+      </div>
+      <div class="tbl-scroll" id="chTable"></div>
+      <p class="note" data-i18n="note_sort"></p>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">02</span><span data-i18n="s_chdetail"></span></h2>
+        <div class="controls">
+          <select id="chdChannel"></select>
+          <select id="chdPeriod"></select>
+        </div>
+      </div>
+      <h3 style="font-size:13.5px;color:var(--ink-dim);margin:0 0 8px;font-weight:600" data-i18n="chd_monthly"></h3>
+      <div class="chart" id="chdMonthly"></div>
+      <h3 style="font-size:13.5px;color:var(--ink-dim);margin:22px 0 8px;font-weight:600" data-i18n="chd_brand"></h3>
+      <div class="tbl-scroll" id="chdBrand"></div>
+    </section>
+  </div>
+
+  <!-- ============ products ============ -->
+  <div class="tab" id="tab-products">
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">01</span><span data-i18n="s_brand"></span></h2>
+        <div class="controls">
+          <select id="brChannel"></select>
+          <select id="brPeriod"></select>
+          <div class="seg" id="brMetric">
+            <button data-v="amt" class="active" data-i18n="m_amount"></button>
+            <button data-v="qty" data-i18n="m_qty"></button>
+          </div>
+        </div>
+      </div>
+      <div class="split">
+        <div class="chart" id="brDonut"></div>
+        <div class="tbl-scroll" id="brTable"></div>
+      </div>
+      <p class="note" data-i18n="note_fold"></p>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">02</span><span data-i18n="s_model"></span></h2>
+        <div class="controls">
+          <select id="mdBrand"></select>
+          <select id="mdPeriod"></select>
+          <div class="seg" id="mdMetric">
+            <button data-v="amt" class="active" data-i18n="m_amount"></button>
+            <button data-v="qty" data-i18n="m_qty"></button>
+          </div>
+        </div>
+      </div>
+      <div class="tbl-scroll" id="mdTable"></div>
+      <button class="btn-more" id="mdMore"></button>
+      <p class="note" data-i18n="note_model"></p>
+    </section>
+  </div>
+
+  <!-- ============ about ============ -->
+  <div class="tab" id="tab-about">
+    <section class="card about" id="about"></section>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+/* ------------------------------------------------------------------ i18n */
+const I18N = {
+  ja: {
+    title:'EDV 販売実績ダッシュボード',
+    tab_overview:'全体', tab_channels:'チャネル別', tab_products:'商品・ブランド別', tab_about:'このデータについて',
+    s_summary:'全体サマリー', s_monthly:'月次推移(チャネル区分別)', s_share:'チャネル別構成',
+    s_chtable:'チャネル別 売上テーブル', s_chdetail:'チャネルごとの詳細',
+    chd_monthly:'月次推移', chd_brand:'ブランド構成',
+    s_brand:'ブランド別売上構成', s_model:'モデル別ランキング',
+    m_amount:'金額', m_qty:'点数',
+    k_sales:'売上金額(税抜)', k_qty:'販売点数', k_orders:'伝票数', k_aov:'客単価(税抜)',
+    unit_thb:'THB', unit_pcs:'点', unit_orders:'件',
+    show_detail:'実績詳細を表示', hide_detail:'実績詳細を隠す',
+    more:'もっと見る', less:'閉じる',
+    col_channel:'チャネル', col_group:'区分', col_amount:'売上金額', col_share:'構成比', col_qty:'点数', col_orders:'伝票数', col_aov:'客単価',
+    col_brand:'ブランド', col_model:'モデル', col_rank:'#', total:'合計',
+    all_channels:'全チャネル', all_brands:'全ブランド',
+    note_exvat:'金額はすべて税抜(VAT 7% 控除後)。伝票数は注文単位。',
+    note_sort:'列見出しをクリックすると並び替えできます。',
+    note_fold:'ドーナツは上位7ブランド+「その他」に集約。表は全ブランドを表示。',
+    note_model:'モデル名は商品名の「(」より前を使用(色・サイズ違いを統合)。',
+    period_label:'対象期間', updated:'データ更新', source:'出典',
+    p_all:'累計', p_h1:'上期(1〜6月)', p_q1:'Q1(1〜3月)', p_q2:'Q2(4〜6月)', p_q3:'Q3',
+    g_store:'実店舗', g_online:'オンライン', g_event:'イベント', g_consignment:'委託販売', g_other:'その他',
+    ch_Online:'Online(SNS・直販)', ch_Consignment:'委託販売', ch_Event:'イベント', ch_Other:'その他(法人販売)',
+    b_Others:'その他',
+    no_data:'この期間のデータはありません',
+  },
+  en: {
+    title:'EDV Sales Performance Dashboard',
+    tab_overview:'Overview', tab_channels:'By channel', tab_products:'Products & brands', tab_about:'About this data',
+    s_summary:'Summary', s_monthly:'Monthly trend by channel group', s_share:'Channel mix',
+    s_chtable:'Sales by channel', s_chdetail:'Channel detail',
+    chd_monthly:'Monthly trend', chd_brand:'Brand mix',
+    s_brand:'Sales by brand', s_model:'Model ranking',
+    m_amount:'Amount', m_qty:'Units',
+    k_sales:'Sales (ex-VAT)', k_qty:'Units sold', k_orders:'Orders', k_aov:'Avg. order (ex-VAT)',
+    unit_thb:'THB', unit_pcs:'units', unit_orders:'orders',
+    show_detail:'Show monthly figures', hide_detail:'Hide monthly figures',
+    more:'Show more', less:'Show less',
+    col_channel:'Channel', col_group:'Group', col_amount:'Sales', col_share:'Share', col_qty:'Units', col_orders:'Orders', col_aov:'Avg. order',
+    col_brand:'Brand', col_model:'Model', col_rank:'#', total:'Total',
+    all_channels:'All channels', all_brands:'All brands',
+    note_exvat:'All amounts exclude 7% VAT. Orders are counted per sales order.',
+    note_sort:'Click a column header to sort.',
+    note_fold:'The donut shows the top 7 brands plus "Others"; the table lists every brand.',
+    note_model:'Model = product name before "(" (colors and sizes merged).',
+    period_label:'Period', updated:'Data updated', source:'Source',
+    p_all:'YTD', p_h1:'H1 (Jan–Jun)', p_q1:'Q1 (Jan–Mar)', p_q2:'Q2 (Apr–Jun)', p_q3:'Q3',
+    g_store:'Stores', g_online:'Online', g_event:'Events', g_consignment:'Consignment', g_other:'Other',
+    ch_Online:'Online (social/direct)', ch_Consignment:'Consignment', ch_Event:'Event', ch_Other:'Other (B2B)',
+    b_Others:'Others',
+    no_data:'No data for this period',
+  },
+  th: {
+    title:'แดชบอร์ดยอดขาย EDV',
+    tab_overview:'ภาพรวม', tab_channels:'ตามช่องทาง', tab_products:'สินค้าและแบรนด์', tab_about:'เกี่ยวกับข้อมูลนี้',
+    s_summary:'สรุปภาพรวม', s_monthly:'แนวโน้มรายเดือนตามกลุ่มช่องทาง', s_share:'สัดส่วนตามช่องทาง',
+    s_chtable:'ยอดขายตามช่องทาง', s_chdetail:'รายละเอียดแต่ละช่องทาง',
+    chd_monthly:'แนวโน้มรายเดือน', chd_brand:'สัดส่วนแบรนด์',
+    s_brand:'ยอดขายตามแบรนด์', s_model:'อันดับรุ่นสินค้า',
+    m_amount:'ยอดเงิน', m_qty:'จำนวนชิ้น',
+    k_sales:'ยอดขาย (ไม่รวม VAT)', k_qty:'จำนวนชิ้นที่ขาย', k_orders:'จำนวนบิล', k_aov:'ยอดเฉลี่ยต่อบิล (ไม่รวม VAT)',
+    unit_thb:'บาท', unit_pcs:'ชิ้น', unit_orders:'บิล',
+    show_detail:'แสดงตัวเลขรายเดือน', hide_detail:'ซ่อนตัวเลขรายเดือน',
+    more:'ดูเพิ่มเติม', less:'ย่อ',
+    col_channel:'ช่องทาง', col_group:'กลุ่ม', col_amount:'ยอดขาย', col_share:'สัดส่วน', col_qty:'ชิ้น', col_orders:'บิล', col_aov:'เฉลี่ย/บิล',
+    col_brand:'แบรนด์', col_model:'รุ่น', col_rank:'#', total:'รวม',
+    all_channels:'ทุกช่องทาง', all_brands:'ทุกแบรนด์',
+    note_exvat:'ยอดเงินทั้งหมดไม่รวม VAT 7% จำนวนบิลนับตามใบสั่งขาย',
+    note_sort:'คลิกหัวคอลัมน์เพื่อเรียงลำดับ',
+    note_fold:'กราฟโดนัทแสดง 7 แบรนด์แรกและ "อื่นๆ" ส่วนตารางแสดงทุกแบรนด์',
+    note_model:'ชื่อรุ่น = ชื่อสินค้าก่อนเครื่องหมาย "(" (รวมสีและไซซ์)',
+    period_label:'ช่วงเวลา', updated:'อัปเดตข้อมูล', source:'ที่มา',
+    p_all:'สะสม', p_h1:'ครึ่งปีแรก (ม.ค.–มิ.ย.)', p_q1:'Q1 (ม.ค.–มี.ค.)', p_q2:'Q2 (เม.ย.–มิ.ย.)', p_q3:'Q3',
+    g_store:'หน้าร้าน', g_online:'ออนไลน์', g_event:'อีเวนต์', g_consignment:'ฝากขาย', g_other:'อื่นๆ',
+    ch_Online:'ออนไลน์ (โซเชียล/ขายตรง)', ch_Consignment:'ฝากขาย', ch_Event:'อีเวนต์', ch_Other:'อื่นๆ (ขายนิติบุคคล)',
+    b_Others:'อื่นๆ',
+    no_data:'ไม่มีข้อมูลในช่วงเวลานี้',
+  },
+};
+const MONTHS = {
+  ja:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+  en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  th:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],
+};
+let LANG = 'ja';
+try { const s = localStorage.getItem('edv_lang'); if (s && I18N[s]) LANG = s; } catch (e) {}
+const t = k => (I18N[LANG][k] ?? I18N.ja[k] ?? k);
+const mName = m => MONTHS[LANG][+m.slice(5) - 1];
+const chName = c => I18N[LANG]['ch_' + c] || c;
+const gName = g => t('g_' + g);
+const bName = b => (b === 'Others' ? t('b_Others') : b);
+
+/* ------------------------------------------------------------------ data helpers */
+const M = DATA.months;
+const CH = DATA.channels.map(c => c.key);
+const GROUP_OF = Object.fromEntries(DATA.channels.map(c => [c.key, c.group]));
+const GROUPS = DATA.groups;
+const GCOLOR = g => `var(--g-${g})`;
+const BRAND_HUES = ['#3987e5','#d95926','#199e70','#c98500','#d55181','#008300','#9085e9'];
+const TOP_BRANDS = DATA.brands.filter(b => b !== 'Others').slice(0, 7);
+const brandColor = b => { const i = TOP_BRANDS.indexOf(b); return i >= 0 ? BRAND_HUES[i] : 'var(--other-gray)'; };
+
+function periods() {
+  const ps = [{ id: 'all', months: M, label: `${t('p_all')} (${mName(M[0])}–${mName(M[M.length - 1])})` }];
+  const q = (ids) => M.filter(m => ids.includes(+m.slice(5)));
+  const add = (id, ms, label) => { if (ms.length) ps.push({ id, months: ms, label }); };
+  if (q([1,2,3,4,5,6]).length === 6) add('h1', q([1,2,3,4,5,6]), t('p_h1'));
+  if (q([1,2,3]).length === 3) add('q1', q([1,2,3]), t('p_q1'));
+  if (q([4,5,6]).length === 3) add('q2', q([4,5,6]), t('p_q2'));
+  const q3 = q([7,8,9]);
+  if (q3.length) add('q3', q3, `${t('p_q3')} (${mName(q3[0])}–${mName(q3[q3.length - 1])})`);
+  M.slice().reverse().forEach(m => add(m, [m], `${m.slice(0, 4)} ${mName(m)}`));
+  return ps;
+}
+const periodMonths = id => (periods().find(p => p.id === id) || periods()[0]).months;
+
+function chSum(ch, months) {           // -> [amt, qty, orders]
+  const r = [0, 0, 0];
+  months.forEach(m => { const v = DATA.ch[ch]?.[m]; if (v) { r[0] += v[0]; r[1] += v[1]; r[2] += v[2]; } });
+  return r;
+}
+function brandSum(channels, months) { // -> {brand: [amt, qty]}
+  const out = {};
+  channels.forEach(c => months.forEach(m => {
+    const bb = DATA.ch_brand[c]?.[m]; if (!bb) return;
+    for (const b in bb) { const o = out[b] || (out[b] = [0, 0]); o[0] += bb[b][0]; o[1] += bb[b][1]; }
+  }));
+  return out;
+}
+
+const fmt = (v, d = 0) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = (v, tot) => tot ? (v / tot * 100).toFixed(1) + '%' : '–';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const sw = c => `<i class="sw" style="background:${c}"></i>`;
+
+/* ------------------------------------------------------------------ tooltip */
+const tip = document.getElementById('tip');
+function showTip(e, html) {
+  tip.innerHTML = html; tip.style.display = 'block';
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+}
+const hideTip = () => { tip.style.display = 'none'; };
+
+/* ------------------------------------------------------------------ state */
+const S = {
+  kpiPeriod: 'all', monthlyMetric: 'amt', monthlyDetail: false,
+  sharePeriod: 'all', shareMetric: 'amt',
+  chtPeriod: 'all', chtSort: { key: 'amt', dir: -1 },
+  chdChannel: 'K village', chdPeriod: 'all',
+  brChannel: 'all', brPeriod: 'all', brMetric: 'amt',
+  mdBrand: 'all', mdPeriod: 'all', mdMetric: 'amt', mdShowAll: false,
+};
+
+function fillSelect(id, options, value) {
+  const el = document.getElementById(id);
+  el.innerHTML = options.map(o => `<option value="${esc(o.id)}"${o.id === value ? ' selected' : ''}>${esc(o.label)}</option>`).join('');
+}
+function bindSelect(id, key, render) {
+  document.getElementById(id).addEventListener('change', e => { S[key] = e.target.value; render(); });
+}
+function bindSeg(id, key, render) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    S[key] = b.dataset.v;
+    el.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    render();
+  });
+}
+
+/* ------------------------------------------------------------------ overview: KPIs */
+function renderKpis() {
+  const ms = periodMonths(S.kpiPeriod);
+  const byG = {}; let tot = [0, 0, 0];
+  CH.forEach(c => { const v = chSum(c, ms); const g = GROUP_OF[c];
+    const o = byG[g] || (byG[g] = [0, 0, 0]); for (let i = 0; i < 3; i++) { o[i] += v[i]; tot[i] += v[i]; } });
+  const bars = (i) => `<div class="bars">${GROUPS.map(g => {
+    const v = byG[g]?.[i] || 0, p = tot[i] ? v / tot[i] * 100 : 0;
+    return `<div class="hbar"><span>${esc(gName(g))}</span><div class="track"><div class="fill" style="width:${p}%;background:${GCOLOR(g)}"></div></div><span class="pct">${p.toFixed(0)}%</span></div>`;
+  }).join('')}</div>`;
+  const aov = tot[2] ? tot[0] / tot[2] : 0;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="lbl">${t('k_sales')}</div><div class="val">${fmt(tot[0])}<span class="unit">${t('unit_thb')}</span></div>${bars(0)}</div>
+    <div class="kpi"><div class="lbl">${t('k_qty')}</div><div class="val">${fmt(tot[1])}<span class="unit">${t('unit_pcs')}</span></div>${bars(1)}</div>
+    <div class="kpi"><div class="lbl">${t('k_orders')}</div><div class="val">${fmt(tot[2])}<span class="unit">${t('unit_orders')}</span></div>${bars(2)}</div>
+    <div class="kpi"><div class="lbl">${t('k_aov')}</div><div class="val">${fmt(aov)}<span class="unit">${t('unit_thb')}</span></div><div class="sub">${esc(periods().find(p => p.id === S.kpiPeriod)?.label || '')}</div></div>`;
+}
+
+/* ------------------------------------------------------------------ stacked monthly bar */
+// ~4 gridlines on a 1/2/2.5/5 x 10^n step, so ticks read 1M/2M/3M, not 1.3M/2.5M/3.8M
+function niceStep(v) {
+  if (v <= 0) return 1;
+  const raw = v / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+}
+const short = v => v >= 1e6 ? +(v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? +(v / 1e3).toFixed(1) + 'K' : fmt(v);
+
+// series: [{key,label,color,values:[per month]}], hover(mi, si) -> html
+function barChart(el, months, series, tipFor) {
+  // draw at the container's real pixel width so axis text stays 11px on phones
+  const W = Math.max(300, Math.round(el.clientWidth || 760)), H = W < 520 ? 240 : 300, L = 48, R = 4, T = 10, B = 28;
+  el._redraw = () => barChart(el, months, series, tipFor);
+  const tot = months.map((_, i) => series.reduce((s, x) => s + x.values[i], 0));
+  const step = niceStep(Math.max(...tot, 0)), max = step * Math.max(1, Math.ceil(Math.max(...tot, 0) / step));
+  const pw = W - L - R, ph = H - T - B, slot = pw / months.length, bw = Math.min(56, slot * 0.62);
+  const y = v => T + ph - v / max * ph;
+  let g = '<g class="axis">';
+  for (let v = 0; v <= max + step / 2; v += step) { const yy = y(v);
+    g += `<line class="${v ? 'grid' : 'base'}" x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}"/><text x="${L - 8}" y="${yy + 4}" text-anchor="end">${short(v)}</text>`; }
+  months.forEach((m, i) => { g += `<text x="${L + slot * i + slot / 2}" y="${H - 8}" text-anchor="middle">${esc(mName(m))}</text>`; });
+  g += '</g>';
+  let bars = '';
+  months.forEach((m, i) => {
+    const x = L + slot * i + (slot - bw) / 2;
+    let acc = 0;
+    const segs = series.map((s, si) => ({ s, si, v: s.values[i] })).filter(o => o.v > 0);
+    segs.forEach((o, k) => {
+      const y0 = y(acc), y1 = y(acc + o.v); acc += o.v;
+      const top = k === segs.length - 1, h = Math.max(0, y0 - y1 - (top ? 0 : 2));
+      const r = top ? Math.min(4, h) : 0;
+      const yt = y1 + (top ? 0 : 2);
+      const d = r ? `M${x},${yt + h} V${yt + r} Q${x},${yt} ${x + r},${yt} H${x + bw - r} Q${x + bw},${yt} ${x + bw},${yt + r} V${yt + h} Z`
+                  : `M${x},${yt + h} V${yt} H${x + bw} V${yt + h} Z`;
+      bars += `<path d="${d}" fill="${o.s.color}" data-mi="${i}" data-si="${o.si}"/>`;
+    });
+    bars += `<rect x="${L + slot * i}" y="${T}" width="${slot}" height="${ph}" fill="transparent" data-mi="${i}" data-col="1"/>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img">${g}${bars}</svg>`;
+  const svg = el.querySelector('svg');
+  svg.addEventListener('mousemove', e => {
+    const tgt = e.target.closest('[data-mi]'); if (!tgt) return hideTip();
+    showTip(e, tipFor(+tgt.dataset.mi));
+  });
+  svg.addEventListener('mouseleave', hideTip);
+}
+
+function renderMonthly() {
+  const idx = S.monthlyMetric === 'amt' ? 0 : 1;
+  const series = GROUPS.map(g => ({ key: g, color: GCOLOR(g),
+    values: M.map(m => CH.filter(c => GROUP_OF[c] === g).reduce((s, c) => s + (DATA.ch[c]?.[m]?.[idx] || 0), 0)) }));
+  document.getElementById('monthlyLegend').innerHTML = GROUPS.map(g => `<span>${sw(GCOLOR(g))}${esc(gName(g))}</span>`).join('');
+  barChart(document.getElementById('monthlyChart'), M, series, mi => {
+    const m = M[mi]; const tot = series.reduce((s, x) => s + x.values[mi], 0);
+    const rows = CH.map(c => [c, DATA.ch[c]?.[m]?.[idx] || 0]).filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]);
+    return `<div class="t">${esc(m.slice(0, 4) + ' ' + mName(m))} · ${fmt(tot)} ${idx ? t('unit_pcs') : t('unit_thb')}</div>` +
+      rows.map(([c, v]) => `<div class="r"><span>${sw(GCOLOR(GROUP_OF[c]))}${esc(chName(c))}</span><span>${fmt(v)}</span></div>`).join('');
+  });
+  const btn = document.getElementById('monthlyDetailBtn'), box = document.getElementById('monthlyDetail');
+  btn.textContent = S.monthlyDetail ? t('hide_detail') : t('show_detail');
+  box.hidden = !S.monthlyDetail;
+  if (S.monthlyDetail) {
+    const cols = M.map(m => ({ id: m, label: mName(m), months: [m] }));
+    periods().filter(p => ['q1', 'q2', 'q3', 'h1', 'all'].includes(p.id)).forEach(p => cols.push({ id: p.id, label: p.label, months: p.months }));
+    const val = (c, ms) => chSum(c, ms)[idx];
+    let h = `<table><thead><tr><th>${t('col_channel')}</th>${cols.map(c => `<th>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>`;
+    CH.forEach(c => { h += `<tr><td><span class="name-cell">${sw(GCOLOR(GROUP_OF[c]))}${esc(chName(c))}</span></td>${cols.map(col => `<td>${fmt(val(c, col.months))}</td>`).join('')}</tr>`; });
+    h += `<tr class="total"><td>${t('total')}</td>${cols.map(col => `<td>${fmt(CH.reduce((s, c) => s + val(c, col.months), 0))}</td>`).join('')}</tr></tbody></table>`;
+    box.innerHTML = h;
+  }
+}
+
+/* ------------------------------------------------------------------ donut ⇄ table */
+function donut(el, items, onHover) { // items: [{key,color,value}]
+  const S2 = 240, R = 110, r = 70, cx = S2 / 2, cy = S2 / 2;
+  const tot = items.reduce((s, i) => s + i.value, 0);
+  if (!tot) { el.innerHTML = `<p class="note">${t('no_data')}</p>`; return; }
+  let a0 = -Math.PI / 2, paths = '';
+  const gap = items.filter(i => i.value > 0).length > 1 ? 0.012 : 0;
+  items.forEach(it => {
+    if (it.value <= 0) return;
+    const a = it.value / tot * Math.PI * 2;
+    if (a >= Math.PI * 2 - 1e-6) {
+      paths += `<path data-k="${esc(it.key)}" fill="${it.color}" fill-rule="evenodd" d="M${cx + R},${cy} A${R},${R} 0 1 1 ${cx - R},${cy} A${R},${R} 0 1 1 ${cx + R},${cy} Z M${cx + r},${cy} A${r},${r} 0 1 0 ${cx - r},${cy} A${r},${r} 0 1 0 ${cx + r},${cy} Z"/>`;
+    } else {
+      const s = a0 + gap / 2, e = a0 + a - gap / 2, big = e - s > Math.PI ? 1 : 0;
+      const p = (rad, ang) => `${cx + rad * Math.cos(ang)},${cy + rad * Math.sin(ang)}`;
+      paths += `<path data-k="${esc(it.key)}" fill="${it.color}" d="M${p(R, s)} A${R},${R} 0 ${big} 1 ${p(R, e)} L${p(r, e)} A${r},${r} 0 ${big} 0 ${p(r, s)} Z"/>`;
+    }
+    a0 += a;
+  });
+  el.innerHTML = `<svg class="donut" viewBox="0 0 ${S2} ${S2}" style="max-width:280px;margin:0 auto">${paths}</svg>`;
+  const svg = el.querySelector('svg');
+  svg.addEventListener('mousemove', e => { const p = e.target.closest('path'); onHover(p ? p.dataset.k : null, e); });
+  svg.addEventListener('mouseleave', () => onHover(null));
+}
+function linkHighlight(donutEl, tableEl, key) {
+  const svg = donutEl.querySelector('svg');
+  if (svg) { svg.classList.toggle('dim', !!key); svg.querySelectorAll('path').forEach(p => p.classList.toggle('on', p.dataset.k === key)); }
+  tableEl.querySelectorAll('tr[data-k]').forEach(tr => tr.classList.toggle('hl', tr.dataset.k === key));
+}
+
+function renderShare() {
+  const ms = periodMonths(S.sharePeriod), idx = S.shareMetric === 'amt' ? 0 : 1;
+  const rows = CH.map(c => ({ c, g: GROUP_OF[c], v: chSum(c, ms)[idx] }));
+  const tot = rows.reduce((s, r) => s + r.v, 0);
+  const byG = GROUPS.map(g => ({ key: g, color: GCOLOR(g), value: rows.filter(r => r.g === g).reduce((s, r) => s + r.v, 0) }));
+  const dEl = document.getElementById('shareDonut'), tEl = document.getElementById('shareTable');
+  let h = `<table><thead><tr><th>${t('col_channel')}</th><th>${idx ? t('col_qty') : t('col_amount')}</th><th>${t('col_share')}</th></tr></thead><tbody>`;
+  GROUPS.forEach(g => {
+    const gr = rows.filter(r => r.g === g), gv = gr.reduce((s, r) => s + r.v, 0);
+    h += `<tr data-k="${g}"><td><span class="name-cell">${sw(GCOLOR(g))}<b>${esc(gName(g))}</b></span></td><td><b>${fmt(gv)}</b></td><td><b>${pct(gv, tot)}</b></td></tr>`;
+    if (gr.length > 1) gr.forEach(r => { h += `<tr class="sub" data-k="${g}"><td style="padding-left:28px">${esc(chName(r.c))}</td><td>${fmt(r.v)}</td><td>${pct(r.v, tot)}</td></tr>`; });
+  });
+  h += `<tr class="total"><td>${t('total')}</td><td>${fmt(tot)}</td><td>100%</td></tr></tbody></table>`;
+  tEl.innerHTML = h;
+  const hover = (k, e) => {
+    linkHighlight(dEl, tEl, k);
+    if (!k || !e) return hideTip();
+    const it = byG.find(x => x.key === k);
+    showTip(e, `<div class="t">${esc(gName(k))}</div><div class="r"><span>${fmt(it.value)}</span><span>${pct(it.value, tot)}</span></div>`);
+  };
+  donut(dEl, byG, hover);
+  tEl.querySelectorAll('tr[data-k]').forEach(tr => {
+    tr.addEventListener('mouseenter', () => linkHighlight(dEl, tEl, tr.dataset.k));
+    tr.addEventListener('mouseleave', () => linkHighlight(dEl, tEl, null));
+  });
+}
+
+/* ------------------------------------------------------------------ channels tab */
+function renderChTable() {
+  const ms = periodMonths(S.chtPeriod);
+  const rows = CH.map(c => { const [amt, qty, ord] = chSum(c, ms); return { c, g: GROUP_OF[c], amt, qty, ord, aov: ord ? amt / ord : 0 }; });
+  const tot = rows.reduce((s, r) => ({ amt: s.amt + r.amt, qty: s.qty + r.qty, ord: s.ord + r.ord }), { amt: 0, qty: 0, ord: 0 });
+  const { key, dir } = S.chtSort;
+  rows.sort((a, b) => key === 'name' ? dir * chName(a.c).localeCompare(chName(b.c)) : key === 'group' ? dir * (GROUPS.indexOf(a.g) - GROUPS.indexOf(b.g)) : dir * (a[key] - b[key]));
+  const th = (k, label) => `<th class="sortable" data-k="${k}">${esc(label)}${key === k ? ` <span class="arrow">${dir < 0 ? '▼' : '▲'}</span>` : ''}</th>`;
+  let h = `<table><thead><tr>${th('name', t('col_channel'))}${th('group', t('col_group'))}${th('amt', t('col_amount'))}<th>${t('col_share')}</th>${th('qty', t('col_qty'))}${th('ord', t('col_orders'))}${th('aov', t('col_aov'))}</tr></thead><tbody>`;
+  rows.forEach(r => { h += `<tr><td><span class="name-cell">${sw(GCOLOR(r.g))}${esc(chName(r.c))}</span></td><td>${esc(gName(r.g))}</td><td>${fmt(r.amt)}</td><td>${pct(r.amt, tot.amt)}</td><td>${fmt(r.qty)}</td><td>${fmt(r.ord)}</td><td>${fmt(r.aov)}</td></tr>`; });
+  h += `<tr class="total"><td>${t('total')}</td><td></td><td>${fmt(tot.amt)}</td><td>100%</td><td>${fmt(tot.qty)}</td><td>${fmt(tot.ord)}</td><td>${fmt(tot.ord ? tot.amt / tot.ord : 0)}</td></tr></tbody></table>`;
+  const el = document.getElementById('chTable'); el.innerHTML = h;
+  el.querySelectorAll('th.sortable').forEach(x => x.addEventListener('click', () => {
+    const k = x.dataset.k;
+    S.chtSort = { key: k, dir: S.chtSort.key === k ? -S.chtSort.dir : (k === 'name' || k === 'group' ? 1 : -1) };
+    renderChTable();
+  }));
+}
+
+function brandTable(bs, idx, totalLabelKey = 'total') {
+  const list = Object.entries(bs).map(([b, v]) => ({ b, v: v[idx] })).filter(x => x.v > 0).sort((a, b) => b.v - a.v);
+  const tot = list.reduce((s, x) => s + x.v, 0);
+  let h = `<table><thead><tr><th>${t('col_brand')}</th><th>${idx ? t('col_qty') : t('col_amount')}</th><th>${t('col_share')}</th></tr></thead><tbody>`;
+  list.forEach(x => { const k = TOP_BRANDS.includes(x.b) ? x.b : '__others';
+    h += `<tr data-k="${esc(k)}"><td><span class="name-cell">${sw(brandColor(x.b))}${esc(bName(x.b))}</span></td><td>${fmt(x.v)}</td><td>${pct(x.v, tot)}</td></tr>`; });
+  h += `<tr class="total"><td>${t(totalLabelKey)}</td><td>${fmt(tot)}</td><td>${tot ? '100%' : '–'}</td></tr></tbody></table>`;
+  return { html: h, list, tot };
+}
+
+function renderChDetail() {
+  const c = S.chdChannel, ms = periodMonths(S.chdPeriod), col = GCOLOR(GROUP_OF[c]);
+  barChart(document.getElementById('chdMonthly'), M,
+    [{ key: c, color: col, values: M.map(m => DATA.ch[c]?.[m]?.[0] || 0) }],
+    mi => { const m = M[mi], v = DATA.ch[c]?.[m] || [0, 0, 0];
+      return `<div class="t">${esc(chName(c))} · ${esc(m.slice(0, 4) + ' ' + mName(m))}</div>
+        <div class="r"><span>${t('col_amount')}</span><span>${fmt(v[0])}</span></div>
+        <div class="r"><span>${t('col_qty')}</span><span>${fmt(v[1])}</span></div>
+        <div class="r"><span>${t('col_orders')}</span><span>${fmt(v[2])}</span></div>`; });
+  const bs = brandSum([c], ms);
+  const amt = brandTable(bs, 0);
+  // brand mix as horizontal bars + numbers (single channel -> bar list reads better than a donut)
+  let h = `<table><thead><tr><th>${t('col_brand')}</th><th style="width:40%"></th><th>${t('col_amount')}</th><th>${t('col_share')}</th><th>${t('col_qty')}</th></tr></thead><tbody>`;
+  amt.list.forEach(x => { const p = amt.tot ? x.v / amt.tot * 100 : 0;
+    h += `<tr><td><span class="name-cell">${sw(brandColor(x.b))}${esc(bName(x.b))}</span></td><td><div class="hbar" style="grid-template-columns:1fr"><div class="track"><div class="fill" style="width:${p}%;background:${col}"></div></div></div></td><td>${fmt(x.v)}</td><td>${p.toFixed(1)}%</td><td>${fmt(bs[x.b][1])}</td></tr>`; });
+  h += `<tr class="total"><td>${t('total')}</td><td></td><td>${fmt(amt.tot)}</td><td>${amt.tot ? '100%' : '–'}</td><td>${fmt(Object.values(bs).reduce((s, v) => s + v[1], 0))}</td></tr></tbody></table>`;
+  document.getElementById('chdBrand').innerHTML = amt.list.length ? h : `<p class="note">${t('no_data')}</p>`;
+}
+
+/* ------------------------------------------------------------------ products tab */
+function renderBrand() {
+  const ms = periodMonths(S.brPeriod), idx = S.brMetric === 'amt' ? 0 : 1;
+  const chs = S.brChannel === 'all' ? CH : [S.brChannel];
+  const bs = brandSum(chs, ms);
+  const tb = brandTable(bs, idx);
+  const items = TOP_BRANDS.map(b => ({ key: b, color: brandColor(b), value: bs[b]?.[idx] || 0 }));
+  items.push({ key: '__others', color: 'var(--other-gray)', value: tb.list.filter(x => !TOP_BRANDS.includes(x.b)).reduce((s, x) => s + x.v, 0) });
+  const dEl = document.getElementById('brDonut'), tEl = document.getElementById('brTable');
+  tEl.innerHTML = tb.html;
+  const hover = (k, e) => {
+    linkHighlight(dEl, tEl, k);
+    if (!k || !e) return hideTip();
+    const it = items.find(x => x.key === k);
+    showTip(e, `<div class="t">${esc(k === '__others' ? t('b_Others') : k)}</div><div class="r"><span>${fmt(it.value)}</span><span>${pct(it.value, tb.tot)}</span></div>`);
+  };
+  donut(dEl, items, hover);
+  tEl.querySelectorAll('tr[data-k]').forEach(tr => {
+    tr.addEventListener('mouseenter', () => linkHighlight(dEl, tEl, tr.dataset.k));
+    tr.addEventListener('mouseleave', () => linkHighlight(dEl, tEl, null));
+  });
+}
+
+function renderModels() {
+  const ms = periodMonths(S.mdPeriod), idx = S.mdMetric === 'amt' ? 0 : 1;
+  const agg = {};
+  ms.forEach(m => { const mm = DATA.model[m] || {};
+    for (const k in mm) { const [b] = k.split('\t'); if (S.mdBrand !== 'all' && b !== S.mdBrand) continue;
+      const o = agg[k] || (agg[k] = [0, 0]); o[0] += mm[k][0]; o[1] += mm[k][1]; } });
+  const list = Object.entries(agg).map(([k, v]) => ({ b: k.split('\t')[0], m: k.split('\t')[1], amt: v[0], qty: v[1] }))
+    .filter(x => x[S.mdMetric] > 0).sort((a, b) => b[S.mdMetric] - a[S.mdMetric]);
+  const tot = list.reduce((s, x) => s + x[S.mdMetric], 0);
+  const shown = S.mdShowAll ? list : list.slice(0, 15);
+  let h = `<table><thead><tr><th>${t('col_rank')}</th><th style="text-align:left">${t('col_model')}</th><th style="text-align:left">${t('col_brand')}</th><th>${t('col_amount')}</th><th>${t('col_qty')}</th><th>${t('col_share')}</th></tr></thead><tbody>`;
+  shown.forEach((x, i) => { h += `<tr><td>${i + 1}</td><td style="text-align:left;white-space:normal">${esc(x.m)}</td><td style="text-align:left"><span class="name-cell">${sw(brandColor(x.b))}${esc(bName(x.b))}</span></td><td>${fmt(x.amt)}</td><td>${fmt(x.qty)}</td><td>${pct(x[S.mdMetric], tot)}</td></tr>`; });
+  h += '</tbody></table>';
+  document.getElementById('mdTable').innerHTML = list.length ? h : `<p class="note">${t('no_data')}</p>`;
+  const more = document.getElementById('mdMore');
+  more.hidden = list.length <= 15;
+  more.textContent = S.mdShowAll ? t('less') : `${t('more')} (${list.length - 15})`;
+}
+
+/* ------------------------------------------------------------------ about */
+const ABOUT = {
+  ja: d => `
+    <h3>このダッシュボードが示すもの</h3>
+    <p>Endeavors社(EDV)自身が顧客に販売した実績(小売)です。Barefoot Inc. の販売実績ダッシュボードにある「対EDV」は Barefoot から EDV への<b>卸請求額</b>で、ここで扱う数字とは別物です。</p>
+    <div class="warn">Barefoot側ダッシュボードとの重複: 2026年分のBarefoot側では、EDVの店舗・オンライン・イベント・委託の生データは読み込まれていません(「対EDV」に置換済み)。ただし Central 百貨店内の売場(Chidlom 等)の小売売上は Barefoot 側に計上されています。本ダッシュボードの「Central LP」は Coollabo(Central Ladprao 3F)の売場で、Barefoot 側の百貨店5店舗とは別の売場です。重複の扱いは両ダッシュボードを並べて確認したうえで決定します。</div>
+    <h3>チャネル区分(10区分)</h3>
+    ${mappingTable('ja')}
+    <h3>計上から除外したもの</h3>
+    <ul>
+      <li>EDV → Barefoot Inc. への請求(グループ内取引): サービス料(Marketing/Marketing Ads/Car rent/Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB、商品 <b>${fmt(d.excluded.interco_goods || 0)}</b> THB(いずれも税抜)</li>
+      <li>商品以外の行(資産売却など) ${fmt(d.excluded.non_product || 0)} THB</li>
+      <li>Status が Voided の注文</li>
+    </ul>
+    <h3>集計ルール</h3>
+    <ul>
+      <li>金額は注文の「Amount」(実請求額。注文単位の値引き後)を、各商品行の金額比で按分。税込で集計し、最後に 1.07 で割って税抜にしています。</li>
+      <li>未入金(Payment status = Pending)の請求書も、請求済みの売上として計上しています(主に委託販売の請求書)。</li>
+      <li>伝票数は注文単位。同じ注文番号が別の店舗・チャネルで再利用されている例があるため、注文番号+店舗+チャネル+日付で1件と数えます。</li>
+      <li>ブランドは商品コードの接頭辞で判定(VFF / CP・CC=Coolcore / TBO・KC=Tabio / OLN=Oleno など)。</li>
+    </ul>
+    <h3>出典</h3>
+    <p>${esc(d.source_file)}(受注システムの販売明細エクスポート)・集計 ${esc(d.generated_at)}</p>`,
+  en: d => `
+    <h3>What this dashboard shows</h3>
+    <p>Sales made by Endeavors Co., Ltd. (EDV) to its own customers (retail). The "対EDV" line in the Barefoot Inc. dashboard is Barefoot's <b>wholesale invoicing</b> to EDV and is a different number.</p>
+    <div class="warn">Overlap with the Barefoot dashboard: for 2026, the Barefoot dashboard no longer loads EDV's store, online, event or consignment files (they were replaced by "対EDV"). Retail sales at Central department-store counters (Chidlom etc.) are still counted there. "Central LP" here is the Coollabo counter (Central Ladprao 3F), a different counter from Barefoot's five department-store counters. How to treat the overlap will be decided after comparing both dashboards side by side.</div>
+    <h3>Channels (10)</h3>
+    ${mappingTable('en')}
+    <h3>Excluded</h3>
+    <ul>
+      <li>EDV → Barefoot Inc. invoices (intra-group): service charges (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB and goods <b>${fmt(d.excluded.interco_goods || 0)}</b> THB (ex-VAT)</li>
+      <li>Non-product lines (asset sale etc.) ${fmt(d.excluded.non_product || 0)} THB</li>
+      <li>Voided orders</li>
+    </ul>
+    <h3>Rules</h3>
+    <ul>
+      <li>Each order's "Amount" (the billed total after order-level discounts) is split across its product lines by line value. Totals are summed VAT-inclusive and divided by 1.07 once at the end.</li>
+      <li>Unpaid invoices (Payment status = Pending, mostly consignment invoices) are counted as sales.</li>
+      <li>Orders are counted per order number + branch + channel + date, because some order numbers are reused across branches.</li>
+      <li>Brand is taken from the product-code prefix (VFF / CP, CC = Coolcore / TBO, KC = Tabio / OLN = Oleno, …).</li>
+    </ul>
+    <h3>Source</h3>
+    <p>${esc(d.source_file)} (order-system sales detail export) · built ${esc(d.generated_at)}</p>`,
+  th: d => `
+    <h3>แดชบอร์ดนี้แสดงอะไร</h3>
+    <p>ยอดขายที่บริษัท เอ็นเดเวอร์ซ จำกัด (EDV) ขายให้ลูกค้าของตนเอง (ค้าปลีก) ส่วน "対EDV" ในแดชบอร์ดของ Barefoot Inc. คือ<b>ยอดขายส่ง</b>ที่ Barefoot เรียกเก็บจาก EDV ซึ่งเป็นตัวเลขคนละตัวกัน</p>
+    <div class="warn">ส่วนที่ซ้ำกับแดชบอร์ด Barefoot: ข้อมูลปี 2026 ฝั่ง Barefoot ไม่ได้นำไฟล์หน้าร้าน ออนไลน์ อีเวนต์ และฝากขายของ EDV มาใช้แล้ว (เปลี่ยนเป็น "対EDV") แต่ยอดขายปลีกของเคาน์เตอร์ในห้าง Central (Chidlom ฯลฯ) ยังนับอยู่ฝั่ง Barefoot ส่วน "Central LP" ในแดชบอร์ดนี้คือเคาน์เตอร์ Coollabo (Central ลาดพร้าว ชั้น 3) ซึ่งเป็นคนละเคาน์เตอร์กับ 5 เคาน์เตอร์ในห้างของ Barefoot วิธีจัดการส่วนที่ซ้ำจะตัดสินใจหลังจากเทียบทั้งสองแดชบอร์ด</div>
+    <h3>ช่องทาง (10 ช่องทาง)</h3>
+    ${mappingTable('th')}
+    <h3>รายการที่ไม่นับรวม</h3>
+    <ul>
+      <li>ใบแจ้งหนี้จาก EDV ถึง Barefoot Inc. (รายการภายในกลุ่ม): ค่าบริการ (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> บาท และสินค้า <b>${fmt(d.excluded.interco_goods || 0)}</b> บาท (ไม่รวม VAT)</li>
+      <li>รายการที่ไม่ใช่สินค้า (เช่น ขายสินทรัพย์) ${fmt(d.excluded.non_product || 0)} บาท</li>
+      <li>คำสั่งซื้อที่ถูกยกเลิก (Voided)</li>
+    </ul>
+    <h3>หลักการคำนวณ</h3>
+    <ul>
+      <li>ใช้ "Amount" ของแต่ละคำสั่งซื้อ (ยอดเรียกเก็บจริงหลังส่วนลดระดับบิล) แล้วกระจายไปยังสินค้าแต่ละรายการตามสัดส่วนมูลค่า รวมยอดแบบรวม VAT แล้วหารด้วย 1.07 ครั้งเดียวตอนท้าย</li>
+      <li>ใบแจ้งหนี้ที่ยังไม่ชำระ (Payment status = Pending ส่วนใหญ่เป็นฝากขาย) นับเป็นยอดขาย</li>
+      <li>นับบิลตาม เลขที่คำสั่งซื้อ + สาขา + ช่องทาง + วันที่ เพราะมีเลขที่ซ้ำกันข้ามสาขา</li>
+      <li>แบรนด์ดูจากรหัสสินค้า (VFF / CP, CC = Coolcore / TBO, KC = Tabio / OLN = Oleno ฯลฯ)</li>
+    </ul>
+    <h3>ที่มา</h3>
+    <p>${esc(d.source_file)} (ไฟล์ส่งออกรายละเอียดการขายจากระบบคำสั่งซื้อ) · ประมวลผล ${esc(d.generated_at)}</p>`,
+};
+const MAPPING = [
+  ['K village', 'store', { ja:'倉庫 Kvillage', en:'Branch "Kvillage"', th:'สาขา Kvillage' }],
+  ['Thaniya', 'store', { ja:'倉庫 Thaniya', en:'Branch "Thaniya"', th:'สาขา Thaniya' }],
+  ['Central LP', 'store', { ja:'倉庫 Coollabo Cen LP 3F', en:'Branch "Coollabo Cen LP 3F"', th:'สาขา Coollabo Cen LP 3F' }],
+  ['Cart LP', 'store', { ja:'倉庫 CART Central LP', en:'Branch "CART Central LP"', th:'สาขา CART Central LP' }],
+  ['Online', 'online', { ja:'販売チャネル Facebook / LINE、本社倉庫からの直販', en:'Sales channel Facebook / LINE, and direct orders from the main warehouse', th:'ช่องทาง Facebook / LINE และขายตรงจากคลังหลัก' }],
+  ['Shopee', 'online', { ja:'販売チャネル Shopee', en:'Sales channel Shopee', th:'ช่องทาง Shopee' }],
+  ['Lazada', 'online', { ja:'販売チャネル Lazada', en:'Sales channel Lazada', th:'ช่องทาง Lazada' }],
+  ['Event', 'event', { ja:'倉庫 Event 1 / Event 2', en:'Branches "Event 1" / "Event 2"', th:'สาขา Event 1 / Event 2' }],
+  ['Consignment', 'consignment', { ja:'委託先への請求書(Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)', en:'Invoices to consignment partners (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)', th:'ใบแจ้งหนี้ถึงร้านฝากขาย (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)' }],
+  ['Other', 'other', { ja:'本社倉庫から法人・個人への請求書(生地の販売など)', en:'Main-warehouse invoices to companies/individuals (e.g. fabric sale)', th:'ใบแจ้งหนี้จากคลังหลักถึงนิติบุคคล/บุคคล (เช่น ขายผ้า)' }],
+];
+function mappingTable(l) {
+  return `<div class="tbl-scroll"><table><thead><tr><th>${I18N[l].col_channel}</th><th>${I18N[l].col_group}</th><th style="text-align:left">${l === 'ja' ? '元データの条件' : l === 'en' ? 'Rule in source data' : 'เงื่อนไขในข้อมูลต้นทาง'}</th></tr></thead><tbody>` +
+    MAPPING.map(([c, g, d]) => `<tr><td><span class="name-cell">${sw(GCOLOR(g))}${esc(I18N[l]['ch_' + c] || c)}</span></td><td>${esc(I18N[l]['g_' + g])}</td><td style="text-align:left">${esc(d[l])}</td></tr>`).join('') +
+    '</tbody></table></div>';
+}
+
+/* ------------------------------------------------------------------ wiring */
+function renderAll() {
+  document.documentElement.lang = LANG;
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === LANG));
+  document.getElementById('periodLine').innerHTML =
+    `${t('period_label')}: <b>${M[0].slice(0, 4)} ${esc(mName(M[0]))} – ${esc(mName(M[M.length - 1]))}</b> · ${t('updated')}: ${esc(DATA.generated_at)} · ${t('source')}: ${esc(DATA.source_file)}`;
+  const ps = periods();
+  ['kpiPeriod', 'sharePeriod', 'chtPeriod', 'chdPeriod', 'brPeriod', 'mdPeriod'].forEach(id => fillSelect(id, ps, S[id]));
+  fillSelect('chdChannel', CH.map(c => ({ id: c, label: chName(c) })), S.chdChannel);
+  fillSelect('brChannel', [{ id: 'all', label: t('all_channels') }, ...CH.map(c => ({ id: c, label: chName(c) }))], S.brChannel);
+  fillSelect('mdBrand', [{ id: 'all', label: t('all_brands') }, ...DATA.brands.map(b => ({ id: b, label: bName(b) }))], S.mdBrand);
+  renderKpis(); renderMonthly(); renderShare(); renderChTable(); renderChDetail(); renderBrand(); renderModels();
+  document.getElementById('about').innerHTML = ABOUT[LANG](DATA);
+}
+
+bindSelect('kpiPeriod', 'kpiPeriod', renderKpis);
+bindSeg('monthlyMetric', 'monthlyMetric', renderMonthly);
+document.getElementById('monthlyDetailBtn').addEventListener('click', () => { S.monthlyDetail = !S.monthlyDetail; renderMonthly(); });
+bindSelect('sharePeriod', 'sharePeriod', renderShare);
+bindSeg('shareMetric', 'shareMetric', renderShare);
+bindSelect('chtPeriod', 'chtPeriod', renderChTable);
+bindSelect('chdChannel', 'chdChannel', renderChDetail);
+bindSelect('chdPeriod', 'chdPeriod', renderChDetail);
+bindSelect('brChannel', 'brChannel', renderBrand);
+bindSelect('brPeriod', 'brPeriod', renderBrand);
+bindSeg('brMetric', 'brMetric', renderBrand);
+bindSelect('mdBrand', 'mdBrand', () => { S.mdShowAll = false; renderModels(); });
+bindSelect('mdPeriod', 'mdPeriod', renderModels);
+bindSeg('mdMetric', 'mdMetric', renderModels);
+document.getElementById('mdMore').addEventListener('click', () => { S.mdShowAll = !S.mdShowAll; renderModels(); });
+
+document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', () => {
+  LANG = b.dataset.lang;
+  try { localStorage.setItem('edv_lang', LANG); } catch (e) {}
+  renderAll();
+}));
+const redrawCharts = () => document.querySelectorAll('.tab.active .chart').forEach(el => el._redraw && el._redraw());
+document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.id === 'tab-' + b.dataset.tab));
+  hideTip();
+  redrawCharts(); // charts in a hidden tab were drawn at width 0
+}));
+let resizeTimer;
+addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(redrawCharts, 150); });
+
+renderAll();
+// deep link: dashboard.html#products opens that tab
+const hashTab = document.querySelector(`nav.tabs button[data-tab="${location.hash.slice(1)}"]`);
+if (hashTab) hashTab.click();
+</script>
+</body>
+</html>

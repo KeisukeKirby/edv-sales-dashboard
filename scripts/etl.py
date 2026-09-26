@@ -1,0 +1,188 @@
+"""EDV (Endeavors) retail sales ETL.
+
+Reads the order-system export (order_detail_*.xlsx, sheet 'Orders') and writes
+data/records.json -- one record per product line, VAT-inclusive amounts.
+
+Scope (agreed with Keisuke 2026-09-26): EDV's OWN sales to its customers.
+Excluded on purpose:
+  * EDV -> Barefoot Inc. (Thailand) invoices. These are inter-company: service
+    charges (Marketing / Marketing Ads / Car rent / Sales Commission) plus a few
+    goods transfers for Central counters. Counting them would mix group-internal
+    billing into retail performance. Totals are still reported in the
+    'excluded' block so they can be reconciled.
+  * Non-product lines (MKT/CMS/CCR service codes, P = asset sale).
+  * Voided orders.
+"""
+import json
+import re
+import sys
+from collections import defaultdict
+from datetime import date
+from pathlib import Path
+
+import openpyxl
+
+ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_SRC = Path.home() / 'Downloads' / 'order_detail_202609261433_u4ll.xlsx'
+SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_SRC
+OUT = ROOT / 'data' / 'records.json'
+
+BFT_CUSTOMER_MARK = 'แบร์ฟุต'  # "บริษัท แบร์ฟุตอิงค์ (ไทยแลนด์) จำกัด"
+NON_PRODUCT_PREFIX = {'MKT', 'CMS', 'CCR', 'P'}
+
+# Consignment partners appear as their own Warehouse/Branch on IV invoices.
+CONSIGNMENT_WAREHOUSES = {'Banana Run', 'Avarin', 'Runnercart', 'EastWest', 'Highlandner',
+                          'Caveman', 'Anvil Camp', 'Pathwild'}
+STORE_WAREHOUSES = {
+    'Kvillage': 'K village',
+    'Thaniya': 'Thaniya',
+    'Coollabo Cen LP 3F': 'Central LP',
+    'CART Central LP': 'Cart LP',
+    'Event 1': 'Event',
+    'Event 2': 'Event',
+}
+ONLINE_CHANNELS = {'Shopee': 'Shopee', 'Lazada': 'Lazada', 'Facebook': 'Online', 'LINE': 'Online'}
+
+BRAND_PREFIX = {
+    'VFF': 'VFF', 'CP': 'Coolcore', 'CC': 'Coolcore', 'OLN': 'Oleno', 'BFJ': 'BFJ',
+    'MTB': 'TabiRela', 'TBO': 'Tabio', 'KC': 'Tabio', 'SW': 'Swans', 'KA': 'Knockaround',
+    'VV': 'Vivo', 'KK': 'Klean Kanteen', 'LN': 'LUNA', 'AQ': 'AQOZ', 'IS': 'Others',
+}
+
+
+def num(v):
+    if v is None or v == '':
+        return 0.0
+    if isinstance(v, (int, float)):
+        return float(v)
+    try:
+        return float(str(v).replace(',', '').strip())
+    except ValueError:
+        return 0.0
+
+
+def parse_dmy(v):
+    d, m, y = (int(x) for x in str(v).strip().split('/'))
+    return date(y, m, d)
+
+
+def code_prefix(code):
+    m = re.match(r'^[A-Za-z]+', str(code or ''))
+    return m.group(0) if m else ''
+
+
+def model_from_name(name):
+    return str(name).split('(')[0].strip() if name else 'Other'
+
+
+def classify_channel(wh, ch, order_no):
+    """Map one order to the 10 reporting channels, or None if unmapped."""
+    if ch in ONLINE_CHANNELS:
+        return ONLINE_CHANNELS[ch]
+    if wh in STORE_WAREHOUSES:
+        return STORE_WAREHOUSES[wh]
+    if wh in CONSIGNMENT_WAREHOUSES:
+        return 'Consignment'
+    if wh == 'คลังสินค้าหลัก':  # main warehouse
+        # IV = B2B invoice to a company (not a consignment partner) -> Other;
+        # anything else from the main warehouse is a direct online order.
+        return 'Other' if str(order_no).startswith('IV') else 'Online'
+    if not wh and ch:
+        return 'Online'
+    return 'Other'
+
+
+def main():
+    wb = openpyxl.load_workbook(SRC, read_only=True, data_only=True)
+    rows = list(wb['Orders'].iter_rows(values_only=True))
+    header = rows[1]  # row 0 is the Orders/Payments/Product data group banner
+    ix = {h: i for i, h in enumerate(header) if h}
+    data = [r for r in rows[2:] if r[ix['Type']] == 'Sell']  # drops blank + 2 footer rows
+
+    def g(r, k):
+        return r[ix[k]]
+
+    # order-level: summed product-line total, and the order's Amount (first line only)
+    orders = defaultdict(lambda: {'lines': [], 'line_total': 0.0, 'amount': None})
+    excluded = defaultdict(float)
+    for r in data:
+        if g(r, 'Status') == 'Voided':
+            continue
+        # order numbers are not unique across branches (TX202606106 is both a
+        # Shopee order and a Central LP receipt), so key on branch/channel/date too
+        o = orders[(g(r, 'Sales order No.'), g(r, 'Warehouse/Branch'), g(r, 'Sales channel'), g(r, 'Date'))]
+        amt = g(r, 'Amount')
+        if amt not in (None, ''):
+            o['amount'] = num(amt)
+        if not g(r, 'Product code') and not g(r, 'Product name'):
+            continue  # split-payment rows carry payment info only
+        # (code-less lines with a name are real sales, e.g. a fabric B2B invoice)
+        o['lines'].append(r)
+        o['line_total'] += num(g(r, 'Total amount'))
+
+    records = []
+    stats = defaultdict(float)
+    for okey, o in orders.items():
+        order_no = okey[0]
+        order_key = '|'.join(str(x or '') for x in okey)
+        if not o['lines']:
+            continue
+        first = o['lines'][0]
+        cust = g(first, 'Customer name') or ''
+        # 'Amount' is what the order actually billed (after order-level %
+        # discounts, e.g. consignment invoices at 30% off); prorate it over the
+        # product lines. Fall back to the line sum when Amount is missing.
+        billed = o['amount'] if o['amount'] is not None else o['line_total']
+        ratio = (billed / o['line_total']) if o['line_total'] else 0.0
+        for r in o['lines']:
+            pc = g(r, 'Product code')
+            prefix = code_prefix(pc)
+            line_amt = num(g(r, 'Total amount')) * ratio
+            if BFT_CUSTOMER_MARK in cust:
+                excluded['interco_service' if prefix in NON_PRODUCT_PREFIX else 'interco_goods'] += line_amt
+                continue
+            if prefix in NON_PRODUCT_PREFIX:
+                excluded['non_product'] += line_amt
+                continue
+            channel = classify_channel(g(r, 'Warehouse/Branch'), g(r, 'Sales channel'), order_no)
+            brand = BRAND_PREFIX.get(prefix, 'Others')
+            d = parse_dmy(g(r, 'Date'))
+            records.append({
+                'date': d.isoformat(),
+                'month': d.strftime('%Y-%m'),
+                'channel': channel,
+                'warehouse': g(r, 'Warehouse/Branch') or '',
+                'order_id': order_no,
+                'order_key': order_key,
+                'brand': brand,
+                'model': model_from_name(g(r, 'Product name')),
+                'code': pc,
+                'category': g(r, 'Category') or '',
+                'qty': num(g(r, 'Quantity')),
+                'amount_vat_incl': round(line_amt, 4),
+                'payment_status': g(r, 'Payment status'),
+            })
+            stats['kept_line_total'] += num(g(r, 'Total amount'))
+            stats['kept_billed'] += line_amt
+
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    meta = {
+        'source_file': SRC.name,
+        'excluded_vat_incl': {k: round(v, 2) for k, v in excluded.items()},
+        'kept_line_total_vat_incl': round(stats['kept_line_total'], 2),
+        'kept_billed_vat_incl': round(stats['kept_billed'], 2),
+    }
+    OUT.write_text(json.dumps({'meta': meta, 'records': records}, ensure_ascii=False), encoding='utf-8')
+
+    by_ch = defaultdict(float)
+    for rec in records:
+        by_ch[rec['channel']] += rec['amount_vat_incl']
+    print(f'{len(records)} product lines, {len({r["order_key"] for r in records})} orders -> {OUT}')
+    for k, v in sorted(by_ch.items(), key=lambda x: -x[1]):
+        print(f'  {k:12s} {v:>14,.2f}')
+    print('  total       ', f'{sum(by_ch.values()):>14,.2f}')
+    print('excluded:', meta['excluded_vat_incl'])
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EDV 販売実績ダッシュボード</title>
+<style>
+:root{
+  --bg:#0F1B14;
+  --panel:#16241C;
+  --panel-2:#1C2E23;
+  --line:#2A3E31;
+  --ink:#EDF3EC;
+  --ink-dim:#AFC4B6;
+  --ink-faint:#7E9587;
+  --accent:#E8A33D;
+  --danger:#C4674F;
+  /* channel families (validated: dataviz validate_palette.js, dark, surface #16241C) */
+  --g-store:#3987e5;
+  --g-online:#d95926;
+  --g-event:#199e70;
+  --g-consignment:#c98500;
+  --g-other:#9085e9;
+  --other-gray:#7E9587;
+  --sans:"Noto Sans JP","Noto Sans Thai",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic","Leelawadee UI",sans-serif;
+  --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Roboto Mono",monospace;
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:radial-gradient(1200px 500px at 10% -10%, rgba(232,163,61,0.07), transparent), var(--bg);
+  color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;padding:32px 20px 60px;
+}
+.wrap{max-width:1180px;margin:0 auto;}
+header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:12px;flex-wrap:wrap;gap:16px;}
+.eyebrow{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.12em;color:var(--accent);text-transform:uppercase;margin-bottom:6px;}
+h1{margin:0;font-size:28px;font-weight:700;}
+.period{font-family:var(--mono);color:var(--ink-dim);font-size:13px;line-height:1.7;margin:6px 0 22px;}
+.period b{color:var(--ink);}
+.lang-toggle{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;}
+.lang-btn{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink-dim);background:transparent;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;}
+.lang-btn:hover{color:var(--ink);}
+.lang-btn.active{background:var(--accent);color:#16241C;}
+.lang-btn:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+nav.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:26px;overflow-x:auto;}
+nav.tabs button{background:none;border:none;padding:11px 16px;font-size:13.5px;font-family:var(--mono);font-weight:600;color:var(--ink-dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+nav.tabs button.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab{display:none;}
+.tab.active{display:block;}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:22px;}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.card-head h2{margin:0;font-size:16px;font-weight:700;}
+.card-head h2 .num{font-family:var(--mono);color:var(--accent);margin-right:8px;font-size:13px;}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+select,.seg button{font-family:var(--sans);font-size:13px;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:6px 10px;}
+select{cursor:pointer;max-width:100%;}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;}
+.seg button{border:none;border-radius:0;cursor:pointer;color:var(--ink-dim);background:var(--panel-2);}
+.seg button.active{background:var(--accent);color:#16241C;font-weight:700;}
+.note{color:var(--ink-faint);font-size:12.5px;margin:10px 0 0;}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+.kpi .lbl{font-size:12.5px;color:var(--ink-dim);}
+.kpi .val{font-size:30px;font-weight:700;line-height:1.25;margin-top:4px;}
+.kpi .unit{font-size:13px;color:var(--ink-dim);font-weight:500;margin-left:4px;}
+.kpi .sub{font-size:12px;color:var(--ink-faint);margin-top:2px;}
+.bars{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
+.hbar{display:grid;grid-template-columns:96px 1fr 44px;gap:8px;align-items:center;font-size:11.5px;color:var(--ink-dim);}
+.hbar .track{height:7px;background:var(--line);border-radius:4px;overflow:hidden;}
+.hbar .fill{height:100%;border-radius:4px;}
+.hbar .pct{text-align:right;font-family:var(--mono);}
+.chart{position:relative;width:100%;}
+.chart svg{display:block;width:100%;height:auto;overflow:visible;}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-dim);margin-bottom:10px;}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;}
+.axis text{fill:var(--ink-faint);font-size:11px;font-family:var(--mono);}
+.axis line.grid{stroke:var(--line);stroke-width:1;}
+.axis line.base{stroke:#3a5243;stroke-width:1;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;}
+th{color:var(--ink-dim);font-weight:600;font-size:12px;}
+th:first-child,td:first-child{text-align:left;}
+td{font-variant-numeric:tabular-nums;}
+tr.total td{font-weight:700;border-top:1px solid var(--ink-faint);}
+tr.hl td{background:rgba(232,163,61,.10);}
+tr.sub td{color:var(--ink-faint);}
+th.sortable{cursor:pointer;user-select:none;}
+th.sortable:hover{color:var(--ink);}
+th .arrow{color:var(--accent);}
+.tbl-scroll{overflow-x:auto;}
+.name-cell{display:inline-flex;align-items:center;gap:8px;}
+.split{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:24px;align-items:center;}
+.donut path{cursor:pointer;transition:opacity .15s;}
+.donut.dim path:not(.on){opacity:.28;}
+.btn-more{margin-top:12px;background:none;border:1px solid var(--line);color:var(--ink-dim);border-radius:7px;padding:7px 14px;cursor:pointer;font-size:13px;}
+.btn-more:hover{color:var(--ink);border-color:var(--accent);}
+.tip{position:fixed;pointer-events:none;background:#0B140F;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.4);z-index:50;display:none;max-width:280px;}
+.tip .t{font-weight:700;margin-bottom:4px;}
+.tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums;}
+.tip .r span:first-child{display:inline-flex;align-items:center;gap:6px;color:var(--ink-dim);}
+.about h3{font-size:15px;margin:18px 0 8px;}
+.about h3:first-child{margin-top:0;}
+.about p,.about li{color:var(--ink-dim);font-size:13.5px;}
+.about ul{padding-left:20px;margin:6px 0;}
+.about td,.about th{white-space:normal;}
+.warn{border-left:3px solid var(--accent);background:var(--panel-2);padding:10px 14px;border-radius:6px;color:var(--ink-dim);font-size:13.5px;}
+@media (max-width:820px){
+  .kpis{grid-template-columns:repeat(2,1fr);}
+  .split{grid-template-columns:1fr;}
+}
+@media (max-width:520px){
+  body{padding:20px 16px 48px;}
+  h1{font-size:22px;}
+  .kpis{grid-template-columns:1fr;}
+  .kpi .val{font-size:26px;}
+  section.card{padding:16px 14px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Endeavors Co., Ltd. · EDV</div>
+      <h1 data-i18n="title"></h1>
+    </div>
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button class="lang-btn" data-lang="ja">日本語</button>
+      <button class="lang-btn" data-lang="en">English</button>
+      <button class="lang-btn" data-lang="th">ไทย</button>
+    </div>
+  </header>
+  <div class="period" id="periodLine"></div>
+
+  <nav class="tabs" role="tablist">
+    <button data-tab="overview" class="active" data-i18n="tab_overview"></button>
+    <button data-tab="channels" data-i18n="tab_channels"></button>
+    <button data-tab="products" data-i18n="tab_products"></button>
+    <button data-tab="about" data-i18n="tab_about"></button>
+  </nav>
+
+  <!-- ============ overview ============ -->
+  <div class="tab active" id="tab-overview">
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">01</span><span data-i18n="s_summary"></span></h2>
+        <div class="controls"><select id="kpiPeriod"></select></div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <p class="note" data-i18n="note_exvat"></p>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">02</span><span data-i18n="s_monthly"></span></h2>
+        <div class="controls">
+          <div class="seg" id="monthlyMetric">
+            <button data-v="amt" class="active" data-i18n="m_amount"></button>
+            <button data-v="qty" data-i18n="m_qty"></button>
+          </div>
+        </div>
+      </div>
+      <div class="legend" id="monthlyLegend"></div>
+      <div class="chart" id="monthlyChart"></div>
+      <button class="btn-more" id="monthlyDetailBtn" data-i18n="show_detail"></button>
+      <div class="tbl-scroll" id="monthlyDetail" hidden></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">03</span><span data-i18n="s_share"></span></h2>
+        <div class="controls">
+          <select id="sharePeriod"></select>
+          <div class="seg" id="shareMetric">
+            <button data-v="amt" class="active" data-i18n="m_amount"></button>
+            <button data-v="qty" data-i18n="m_qty"></button>
+          </div>
+        </div>
+      </div>
+      <div class="split">
+        <div class="chart" id="shareDonut"></div>
+        <div class="tbl-scroll" id="shareTable"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ channels ============ -->
+  <div class="tab" id="tab-channels">
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">01</span><span data-i18n="s_chtable"></span></h2>
+        <div class="controls"><select id="chtPeriod"></select></div>
+      </div>
+      <div class="tbl-scroll" id="chTable"></div>
+      <p class="note" data-i18n="note_sort"></p>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">02</span><span data-i18n="s_chdetail"></span></h2>
+        <div class="controls">
+          <select id="chdChannel"></select>
+          <select id="chdPeriod"></select>
+        </div>
+      </div>
+      <h3 style="font-size:13.5px;color:var(--ink-dim);margin:0 0 8px;font-weight:600" data-i18n="chd_monthly"></h3>
+      <div class="chart" id="chdMonthly"></div>
+      <h3 style="font-size:13.5px;color:var(--ink-dim);margin:22px 0 8px;font-weight:600" data-i18n="chd_brand"></h3>
+      <div class="tbl-scroll" id="chdBrand"></div>
+    </section>
+  </div>
+
+  <!-- ============ products ============ -->
+  <div class="tab" id="tab-products">
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">01</span><span data-i18n="s_brand"></span></h2>
+        <div class="controls">
+          <select id="brChannel"></select>
+          <select id="brPeriod"></select>
+          <div class="seg" id="brMetric">
+            <button data-v="amt" class="active" data-i18n="m_amount"></button>
+            <button data-v="qty" data-i18n="m_qty"></button>
+          </div>
+        </div>
+      </div>
+      <div class="split">
+        <div class="chart" id="brDonut"></div>
+        <div class="tbl-scroll" id="brTable"></div>
+      </div>
+      <p class="note" data-i18n="note_fold"></p>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">02</span><span data-i18n="s_model"></span></h2>
+        <div class="controls">
+          <select id="mdBrand"></select>
+          <select id="mdPeriod"></select>
+          <div class="seg" id="mdMetric">
+            <button data-v="amt" class="active" data-i18n="m_amount"></button>
+            <button data-v="qty" data-i18n="m_qty"></button>
+          </div>
+        </div>
+      </div>
+      <div class="tbl-scroll" id="mdTable"></div>
+      <button class="btn-more" id="mdMore"></button>
+      <p class="note" data-i18n="note_model"></p>
+    </section>
+  </div>
+
+  <!-- ============ about ============ -->
+  <div class="tab" id="tab-about">
+    <section class="card about" id="about"></section>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = {"generated_at":"2026-09-26 14:41","source_file":"order_detail_202609261433_u4ll.xlsx","vat_rate":0.07,"months":["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08"],"channels":[{"key":"K village","group":"store"},{"key":"Thaniya","group":"store"},{"key":"Central LP","group":"store"},{"key":"Cart LP","group":"store"},{"key":"Online","group":"online"},{"key":"Shopee","group":"online"},{"key":"Lazada","group":"online"},{"key":"Event","group":"event"},{"key":"Consignment","group":"consignment"},{"key":"Other","group":"other"}],"groups":["store","online","event","consignment","other"],"brands":["VFF","Coolcore","Oleno","Swans","Tabio","BFJ","Knockaround","Vivo","TabiRela","Others","Klean Kanteen","LUNA","AQOZ"],"ch":{"Other":{"2026-08":[2981.31,9,2],"2026-07":[56358.19,136,1]},"Online":{"2026-08":[10336.45,4,3],"2026-04":[2018.69,4,2],"2026-03":[6518.69,14,3],"2026-06":[639.25,1,1],"2026-01":[1345.79,2,1],"2026-02":[2943.93,6,1]},"Consignment":{"2026-08":[15188.69,40,6],"2026-07":[20508.69,60,4],"2026-04":[31121.87,95,6],"2026-06":[26758.32,80,5],"2026-03":[23339.44,69,5],"2026-05":[21737.29,61,6],"2026-02":[9611.59,29,4],"2026-01":[16319.16,49,5]},"Central LP":{"2026-08":[361038.16,192,130],"2026-05":[427500.45,295,146],"2026-04":[348787.2,250,120],"2026-07":[509023.18,213,130],"2026-06":[373805.72,188,108],"2026-03":[431735.44,283,124],"2026-01":[562796.92,396,177],"2026-02":[358049.93,248,124]},"Cart LP":{"2026-08":[84468.22,109,74],"2026-05":[276614.13,526,268],"2026-04":[97356.36,124,73],"2026-07":[80249.16,110,76],"2026-06":[77816.26,84,54],"2026-03":[54656.07,77,59]},"Shopee":{"2026-08":[108337.38,167,132],"2026-05":[230566.36,417,305],"2026-04":[184933.64,333,243],"2026-07":[136654.21,217,171],"2026-06":[194331.78,331,245],"2026-03":[145425.23,241,171],"2026-01":[146695.33,242,172],"2026-02":[148850.47,250,192]},"K village":{"2026-08":[1199217.38,387,198],"2026-05":[793689.91,285,142],"2026-04":[681651.78,235,119],"2026-07":[920472.0,274,165],"2026-06":[807395.23,256,145],"2026-03":[553190.47,230,110],"2026-01":[791104.3,347,139],"2026-02":[566249.07,251,108]},"Thaniya":{"2026-08":[254581.31,357,212],"2026-05":[288832.38,488,235],"2026-04":[315771.17,495,249],"2026-07":[298496.31,464,249],"2026-06":[232710.37,375,205],"2026-03":[313559.47,452,254],"2026-02":[311064.07,486,243],"2026-01":[289447.74,454,233]},"Lazada":{"2026-08":[3534.58,5,2],"2026-05":[5061.96,10,8],"2026-04":[10255.42,21,12],"2026-07":[2289.72,4,3],"2026-03":[5218.79,9,7],"2026-06":[1285.98,3,2],"2026-02":[1822.43,3,2],"2026-01":[2740.19,4,2]},"Event":{"2026-08":[1332049.53,1434,570],"2026-07":[155698.6,119,52],"2026-06":[355160.75,330,190]}},"ch_brand":{"Other":{"2026-08":{"Tabio":[2981.31,9]},"2026-07":{"Others":[56358.19,136]}},"Online":{"2026-08":{"Vivo":[9644.86,2],"Tabio":[691.59,2]},"2026-04":{"Coolcore":[2018.69,4]},"2026-03":{"Coolcore":[6518.69,14]},"2026-06":{"Coolcore":[639.25,1]},"2026-01":{"Coolcore":[1345.79,2]},"2026-02":{"Coolcore":[2943.93,6]}},"Consignment":{"2026-08":{"Coolcore":[15188.69,40]},"2026-07":{"Coolcore":[20508.69,60]},"2026-04":{"Coolcore":[31121.87,95]},"2026-06":{"Coolcore":[26758.32,80]},"2026-03":{"Coolcore":[23339.44,69]},"2026-05":{"Coolcore":[21737.29,61]},"2026-02":{"Coolcore":[9611.59,29]},"2026-01":{"Coolcore":[16319.16,49]}},"Central LP":{"2026-08":{"Coolcore":[52220.59,97],"VFF":[283113.08,59],"Oleno":[20162.43,24],"BFJ":[5542.06,12]},"2026-05":{"Coolcore":[56487.83,177],"VFF":[344775.89,87],"Knockaround":[12304.21,10],"BFJ":[4121.5,9],"Oleno":[9811.03,12]},"2026-04":{"Coolcore":[53313.18,172],"VFF":[280663.93,59],"Knockaround":[3224.3,3],"Oleno":[8852.15,10],"BFJ":[2733.64,6]},"2026-07":{"Coolcore":[51895.23,93],"VFF":[440172.06,96],"Oleno":[9794.21,12],"BFJ":[4985.98,11],"Knockaround":[2175.7,1]},"2026-06":{"VFF":[324939.44,71],"Oleno":[11211.21,13],"Coolcore":[28743.85,97],"Knockaround":[7990.65,5],"BFJ":[920.56,2]},"2026-03":{"BFJ":[13411.21,29],"VFF":[364504.3,82],"Coolcore":[36339.93,159],"Oleno":[4722.99,5],"Knockaround":[12757.01,8]},"2026-01":{"Coolcore":[62437.66,211],"VFF":[455773.08,96],"Oleno":[20936.64,25],"BFJ":[3228.97,51],"Knockaround":[20420.56,13]},"2026-02":{"VFF":[281378.22,71],"Coolcore":[43052.45,141],"Oleno":[10195.89,12],"Knockaround":[19755.14,12],"BFJ":[3668.22,12]}},"Cart LP":{"2026-08":{"Coolcore":[43701.87,83],"Oleno":[5084.11,6],"BFJ":[934.58,2],"VFF":[34747.66,18]},"2026-05":{"Coolcore":[216426.09,473],"Oleno":[19915.14,28],"VFF":[35600.0,15],"BFJ":[4672.9,10]},"2026-04":{"Coolcore":[52631.12,103],"Oleno":[8242.99,10],"BFJ":[1401.87,3],"VFF":[35080.37,8]},"2026-07":{"Coolcore":[43038.32,80],"Oleno":[13925.23,16],"VFF":[21430.47,10],"BFJ":[1855.14,4]},"2026-06":{"VFF":[41407.48,11],"Oleno":[6517.38,8],"Coolcore":[28489.53,62],"BFJ":[1401.87,3]},"2026-03":{"Coolcore":[28964.49,56],"VFF":[16355.14,8],"Oleno":[8448.6,11],"BFJ":[887.85,2]}},"Shopee":{"2026-08":{"Coolcore":[108337.38,167]},"2026-05":{"Coolcore":[230566.36,417]},"2026-04":{"Coolcore":[184933.64,333]},"2026-07":{"Coolcore":[136654.21,217]},"2026-06":{"Coolcore":[194331.78,331]},"2026-03":{"Coolcore":[145425.23,241]},"2026-01":{"Coolcore":[146695.33,242]},"2026-02":{"Coolcore":[148850.47,250]}},"K village":{"2026-08":{"VFF":[1078752.25,247],"Vivo":[70788.88,15],"Coolcore":[11796.26,25],"Oleno":[15038.17,18],"BFJ":[16222.66,78],"Knockaround":[4600.47,3],"LUNA":[2018.69,1]},"2026-05":{"VFF":[735577.99,181],"BFJ":[15841.12,54],"Coolcore":[8427.57,19],"Oleno":[21144.32,25],"Knockaround":[6642.83,3],"LUNA":[6056.07,3]},"2026-04":{"VFF":[654741.99,175],"Coolcore":[6151.4,14],"LUNA":[4037.38,2],"BFJ":[5434.18,30],"Oleno":[10265.79,13],"Knockaround":[1021.03,1]},"2026-07":{"Coolcore":[5897.61,14],"VFF":[892471.03,203],"BFJ":[14635.51,49],"Oleno":[7467.85,8]},"2026-06":{"VFF":[777937.43,180],"Oleno":[7476.13,9],"Coolcore":[6154.57,12],"BFJ":[15827.1,55]},"2026-03":{"VFF":[510583.09,134],"BFJ":[15905.49,45],"Oleno":[8223.55,10],"Knockaround":[3552.17,3],"Coolcore":[8870.09,35],"LUNA":[6056.07,3]},"2026-01":{"VFF":[727687.43,150],"Coolcore":[5738.84,85],"BFJ":[27443.49,83],"Oleno":[21486.88,25],"LUNA":[8747.66,4]},"2026-02":{"VFF":[532479.74,131],"BFJ":[7343.26,27],"Coolcore":[6249.53,76],"Oleno":[10411.64,12],"Knockaround":[1448.6,1],"LUNA":[8316.29,4]}},"Thaniya":{"2026-08":{"Oleno":[38037.38,55],"Coolcore":[174287.85,288],"Swans":[32859.81,8],"Knockaround":[7710.28,5],"Klean Kanteen":[1685.98,1]},"2026-05":{"Coolcore":[233014.77,435],"Oleno":[26168.22,38],"Swans":[14745.51,5],"Knockaround":[11355.14,7],"Klean Kanteen":[3548.74,3]},"2026-04":{"Coolcore":[239495.89,443],"Knockaround":[18925.23,14],"Oleno":[17656.07,26],"Swans":[37387.38,10],"Klean Kanteen":[2306.59,2]},"2026-07":{"Coolcore":[246109.35,416],"Oleno":[21626.17,32],"Swans":[20373.83,10],"Knockaround":[8878.5,5],"Klean Kanteen":[1508.46,1]},"2026-06":{"Coolcore":[180214.39,323],"Klean Kanteen":[12774.95,11],"Swans":[12122.9,5],"Oleno":[22878.5,33],"Knockaround":[4719.63,3]},"2026-03":{"Coolcore":[214755.56,392],"Oleno":[23401.34,33],"Swans":[55129.44,13],"Knockaround":[14719.63,9],"Klean Kanteen":[5553.5,5]},"2026-02":{"Klean Kanteen":[16025.75,14],"Coolcore":[240384.11,448],"Knockaround":[6542.06,5],"Oleno":[7738.32,11],"Swans":[40373.83,8]},"2026-01":{"Coolcore":[233366.73,428],"Klean Kanteen":[6601.2,5],"Swans":[39100.37,8],"Knockaround":[1448.6,1],"Oleno":[8930.84,12]}},"Lazada":{"2026-08":{"Coolcore":[3534.58,5]},"2026-05":{"Coolcore":[5061.96,10]},"2026-04":{"Coolcore":[10255.42,21]},"2026-07":{"Coolcore":[2289.72,4]},"2026-03":{"Coolcore":[5218.79,9]},"2026-06":{"Coolcore":[1285.98,3]},"2026-02":{"Coolcore":[1822.43,3]},"2026-01":{"Coolcore":[2740.19,4]}},"Event":{"2026-08":{"Coolcore":[78630.84,170],"Oleno":[60930.84,80],"VFF":[844235.51,220],"AQOZ":[17988.79,12],"Others":[4977.57,22],"BFJ":[13037.38,31],"TabiRela":[56418.69,37],"Tabio":[253895.33,860],"Knockaround":[1934.58,2]},"2026-07":{"VFF":[113883.18,32],"BFJ":[2523.36,6],"Tabio":[17882.71,61],"TabiRela":[15334.58,10],"Coolcore":[2598.13,5],"Oleno":[3347.66,4],"Others":[128.97,1]},"2026-06":{"Coolcore":[135269.82,253],"Oleno":[13037.38,21],"Swans":[206853.54,56]}}},"model":{"2026-08":{"Tabio\tTBO 071120040":[9474.77,17],"Tabio\tTBO 071120038":[12639.25,20],"Tabio\tTBO 011133059":[7102.8,24],"Tabio\tTBO 072120041":[7261.68,14],"Tabio\tTBO 071120037":[7536.45,12],"Tabio\tTBO 072120040":[8321.5,13],"Vivo\tVivo Primus lite iv":[46345.79,10],"Coolcore\tCP Multi-Chill":[71400.37,146],"Coolcore\tHeadband Studio":[9881.57,31],"Coolcore\tCP Outdoor Chill Towel":[8125.61,23],"Coolcore\tCP Arm Sleeves":[297576.15,447],"Coolcore\tCP Multi-Chill Open Ear":[27364.49,55],"Coolcore\tCP Sports Chill Towel":[61439.95,131],"VFF\tVFF V-Soul":[953415.85,214],"Oleno\tOleno Arm Sleeve UL":[30878.5,48],"Oleno\tOleno Arm Sleeve UL With Thumb Hole":[14654.21,21],"VFF\tVFF V-Train 2.0":[69880.37,14],"Vivo\tVivo primus lite iv":[18398.13,4],"Oleno\tOleno Hadashi Socks Road":[4689.35,4],"Oleno\tOleno Ultimate ASO Long":[4509.91,4],"VFF\tVFF KSO EVO":[219132.71,51],"Coolcore\tForearm Shiver":[2635.51,15],"Coolcore\tGolf Cap":[2433.64,5],"Oleno\tOleno Ultimate":[32589.95,42],"VFF\tVFF Scramkey":[68061.31,18],"BFJ\tBFJ Free Socks":[0.0,27],"VFF\tVFF V-Run":[486488.59,93],"BFJ\tBFJ Socks":[35736.68,96],"VFF\tVFF Socks Mini Crew Summer":[25267.34,47],"VFF\tVFF Socks High Crew Summer":[1942.99,3],"Swans\tSwans LI SIN 0714":[5803.74,1],"VFF\tVFF Spidrwalk":[73939.63,14],"Coolcore\tT-Shirt":[4953.39,18],"Oleno\tOleno Calf Supporter Plain":[747.66,1],"VFF\tVFF Graspifier":[60353.27,14],"Oleno\tOleno Comod":[5964.67,10],"Coolcore\tRunning Cap":[641.12,1],"Coolcore\tSports Chill Towel":[251.87,1],"Knockaround\tKnockaround PSAQ3360":[1074.77,1],"VFF\tVFF Trailope":[36620.56,7],"Oleno\tOleno Ultimate TNG":[12560.75,13],"Swans\tSwans OG5 0751":[3785.05,1],"Coolcore\tArm Sleeves":[994.39,2],"Oleno\tOleno Ultimate SHR":[4831.78,6],"Knockaround\tKnockaround PSSK3080":[1021.03,1],"Vivo\tVivo Gobi iii sneaker leather":[5318.22,1],"VFF\tVFF Breezandal":[120270.65,23],"VFF\tVFF V-Alpha":[25314.49,5],"VFF\tVFF Groundsplay":[21439.25,4],"Vivo\tVivo Primus lite knit natural":[10371.59,2],"Knockaround\tKnockaround FPAV2399":[2130.84,1],"LUNA\tLUNA Venado 2.0":[2018.69,1],"Swans\tSwans CR 3516":[6644.86,1],"VFF\tVFF Socks Crew Summer":[7897.2,14],"Oleno\tOleno Calf Protection":[3364.49,4],"Swans\tSwans SJ9N SMK":[644.86,1],"Knockaround\tKnockaround FLSK3080":[2149.53,2],"Klean Kanteen\tRise Tumbler":[1685.98,1],"Swans\tSwans ER1 0170":[4626.17,1],"Knockaround\tKnockaround TSAQ3360":[1448.6,1],"Oleno\tOleno Hadashi Socks Openfinger":[3349.53,3],"Oleno\tOleno Ultimate ASO":[7115.89,9],"AQOZ\tRunning Tops for Women":[7401.87,5],"AQOZ\tRunning Tops for Men":[10586.92,7],"Others\tStole":[1607.48,4],"Oleno\tOleno S-70":[6325.23,8],"TabiRela\tMarugo TabiRela":[50586.92,34],"VFF\tVFF KMD Evo":[9420.56,2],"VFF\tVFF EL-X Knit":[5495.33,2],"Oleno\tOleno Performance Wool Crew Middle Thickness":[3162.62,4],"Oleno\tOleno Premium Outdoor Socks":[3162.62,4],"Oleno\tOleno Calf Supporter Bicolor":[672.9,1],"VFF\tVibram Furoshiki Eco F":[13962.62,6],"VFF\tVFF CVT-Hemp":[9084.11,3],"Tabio\tTBO 011133080":[4299.07,14],"Tabio\tTBO 011130543":[3121.5,10],"Tabio\tTabio Keychain":[0.0,140],"Tabio\tTBO 011141563":[6649.07,17],"Tabio\tTBO 011131118":[7009.35,23],"Tabio\tTBO 021132512":[1819.63,4],"Tabio\tTBO 021140215":[10766.36,35],"Tabio\tTBO 011120170":[5597.66,22],"Tabio\tTBO 011190054":[3164.02,11],"Tabio\tTBO 011190087":[755.61,3],"Tabio\tTBO 011120195":[11065.42,39],"Tabio\tTBO 011190070":[3639.25,14],"Tabio\tTBO 021131760":[5854.21,16],"Tabio\tTBO 011130783":[3364.49,11],"Tabio\tTBO 021132284":[3988.79,12],"Tabio\tTBO 021120098":[2835.51,10],"Tabio\tTBO 021130449":[7626.17,25],"Tabio\tTBO 011148162":[2524.3,9],"Tabio\tTBO 011131679":[3968.22,12],"Tabio\tTBO 011110154":[3346.26,13],"Tabio\tTBO 051120003":[14866.82,30],"Tabio\tTBO 062131187":[3028.04,10],"Tabio\tTBO 072120037":[6440.65,11],"Tabio\tTBO 011141551":[3420.56,11],"Tabio\tTBO 062120349":[2904.67,10],"Tabio\tTBO 062130228":[847.2,3],"Tabio\tTBO 011131100":[6728.97,22],"Tabio\tTBO 021131981":[3028.04,10],"Tabio\tTBO 062120336":[3993.93,14],"Tabio\tTBO 071120036":[7196.26,12],"Tabio\tTBO 062131420":[3700.93,10],"Tabio\tTBO 062130200":[717.76,2],"Tabio\tTBO 062110142":[1603.74,6],"Tabio\tTBO 012130058":[2560.75,8],"Tabio\tTBO 062120416":[2766.36,9],"Tabio\tTBO 021132611":[3979.91,10],"Tabio\tTBO 062120376":[3440.65,12],"Tabio\tTBO 011110122":[6754.21,26],"Tabio\tTBO 012130055":[1252.34,4],"Tabio\tTBO 071120039":[622.43,1],"Tabio\tTBO 021120111":[4261.68,14],"Swans\tSwans EN8G2 0714":[5803.74,1],"Swans\tSwans SR81M SMBL":[1766.36,1],"Swans\tSwans OG5 0168":[3785.05,1],"Knockaround\tKnockaround FPSB2365":[2242.99,1],"Others\tMesh Cloth":[553.27,2],"Others\tSocks":[1160.75,9],"VFF\tVFF V-Trek":[17325.23,4],"Tabio\tTBO 062110103":[2282.24,8],"Tabio\tTBO 062110200":[7170.56,28],"Tabio\tTBO 011110141":[8086.45,31],"Tabio\tTBO 072120038":[3634.11,6],"VFF\tVFF V-Trail 2.0":[5041.12,2],"VFF\tVFF KSO ECO":[5831.78,2],"Tabio\tTBO 062120414":[1175.7,4],"Tabio\tTBO 062111200":[1279.91,5],"Tabio\tTBO 051120018":[4916.36,10],"Knockaround\tKnockaround PMSK3352":[967.29,1],"Others\tKid's Half Pants":[145.79,1],"Knockaround\tKnockaround FSRM3325":[967.29,1],"TabiRela\tMarugo Tabi Hitoe+":[5831.78,3],"Others\tBlanket":[220.56,1],"Others\tPet Cool Tank":[1289.72,5],"Tabio\tTBO 062120334":[1175.7,4],"Knockaround\tKnockaround FPRS2366":[2242.99,1],"Oleno\tOleno Calf Supporter Pixel Map":[672.9,1],"VFF\tVFF V-Aqua":[3205.61,1],"VFF\tVibram Furoshiki Yuwa":[1457.94,1]},"2026-07":{"Others\tPolyester Piece Dyed Circular Knit Fabric":[56358.19,136],"Coolcore\tCP Arm Sleeves":[315884.22,466],"Coolcore\tCP Multi-Chill":[84300.85,165],"Coolcore\tCP Outdoor Chill Towel":[5440.37,26],"Coolcore\tCP Sports Chill Towel":[48787.88,107],"Coolcore\tForearm Shiver":[1587.56,9],"Coolcore\tHeadband Studio":[8719.4,27],"Coolcore\tSports Chill Towel":[755.61,3],"VFF\tVFF Scramkey":[32897.2,8],"Coolcore\tCP Multi-Chill Open Ear":[39347.13,77],"Oleno\tOleno Arm Sleeve UL With Thumb Hole":[4485.98,6],"VFF\tVFF V-Run":[305333.64,57],"VFF\tVFF V-Soul":[642239.45,143],"VFF\tVFF KSO EVO":[105235.31,23],"VFF\tVFF Graspifier":[70567.29,16],"VFF\tVFF Socks Mini Crew Summer":[15420.56,28],"BFJ\tBFJ Socks":[24000.0,58],"VFF\tVibram Furoshiki Eco F":[9308.41,4],"Tabio\tTabio Keychain":[0.0,10],"Tabio\tTBO 021132284":[1048.6,3],"TabiRela\tMarugo TabiRela":[13390.65,9],"TabiRela\tMarugo Tabi Hitoe+":[1943.93,1],"Tabio\tTBO 062110103":[293.93,1],"Tabio\tTBO 062110142":[1048.6,4],"Oleno\tOleno Arm Sleeve UL":[18317.76,28],"VFF\tVFF Breezandal":[80534.39,15],"VFF\tVFF V-Train 2.0":[21671.03,5],"Tabio\tTBO 021131760":[403.74,1],"Tabio\tTBO 011141551":[336.45,1],"Oleno\tOleno Ultimate ASO Long":[1076.64,1],"Oleno\tOleno Ultimate":[11999.25,15],"Tabio\tTBO 062110200":[1480.37,6],"Tabio\tTBO 011110141":[1033.18,4],"Tabio\tTBO 062111200":[740.19,3],"Tabio\tTBO 011141563":[381.31,1],"Tabio\tTBO 021140215":[299.07,1],"Tabio\tTBO 021130449":[299.07,1],"Tabio\tTBO 062120414":[276.64,1],"Tabio\tTBO 051120003":[1942.99,4],"Tabio\tTBO 021132512":[882.24,2],"Tabio\tTBO 011110154":[786.45,3],"Tabio\tTBO 071120036":[1835.05,3],"Tabio\tTBO 012130055":[299.07,1],"Tabio\tTBO 011130543":[598.13,2],"Tabio\tTBO 011133080":[299.07,1],"Tabio\tTBO 011190087":[262.15,1],"Tabio\tTBO 011190054":[293.93,1],"VFF\tVFF Socks Crew Summer":[3505.14,6],"VFF\tVibram Furoshiki Yuwa":[2915.89,2],"Tabio\tTBO 021132611":[405.14,1],"Tabio\tTBO 011131100":[317.76,1],"Tabio\tTBO 021131981":[317.76,1],"Oleno\tOleno Ultimate ASO":[2521.31,3],"Tabio\tTBO 071120038":[2001.87,3],"Others\tSocks":[128.97,1],"VFF\tVFF Groundsplay":[33607.48,6],"Oleno\tOleno Calf Protection":[5004.67,6],"Oleno\tOleno Ultimate TNG":[7144.86,7],"Swans\tSwans SWB-1 SCLA":[831.78,1],"Swans\tSW0001 EN8 3516":[5803.74,1],"Knockaround\tKnockaround FPSK2080":[2242.99,1],"BFJ\tBFJ Free Socks":[0.0,12],"VFF\tVFF Spidrwalk":[75113.27,14],"Oleno\tOleno Comod":[1215.14,2],"Knockaround\tKnockaround FSYB3315":[1074.77,1],"VFF\tVFF V-Trek":[21460.93,4],"Coolcore\tGolf Cap":[1878.5,4],"VFF\tVFF V-Alpha":[36386.92,7],"Knockaround\tKnockaround FPRS2366":[2242.99,1],"Oleno\tOleno Hadashi Socks Openfinger":[2320.75,2],"VFF\tVFF Socks High Crew Summer":[634.58,1],"Coolcore\tT-Shirt":[549.53,2],"Coolcore\tRunning Cap":[1740.19,3],"Swans\tSW0023 SACR2 0714":[4121.5,1],"VFF\tVFF Trailope":[11125.23,2],"Swans\tSW0028 SW 45OP S-4.0":[1018.69,1],"Knockaround\tKnockaround PSMS3200":[1074.77,1],"Oleno\tOleno Ultimate SHR":[878.5,1],"Swans\tSwans SR72M NASHD":[1579.44,1],"Swans\tSwans SW-30NB SKBL":[925.23,1],"Swans\tSwans SAMV 0714":[3785.05,1],"Oleno\tOleno Hadashi Socks Road":[1196.26,1],"Knockaround\tKnockaround FPAV2399":[2242.99,1],"Swans\tSwans SW 45N SMBK":[738.32,1],"Swans\tSwans SW 45N SMPUR":[738.32,1],"Knockaround\tKnockaround FPSB2365":[2175.7,1],"Swans\tSwans SWB-1 SMK":[831.78,1],"Klean Kanteen\tRise Mug":[1508.46,1]},"2026-05":{"Coolcore\tCP Arm Sleeves":[461648.66,718],"Coolcore\tCP Outdoor Chill Towel":[40390.38,270],"Coolcore\tForearm Shiver":[4432.56,26],"Oleno\tOleno Arm Sleeve UL":[26494.58,42],"Coolcore\tCP Multi-Chill Open Ear":[56139.58,115],"Coolcore\tCP Multi-Chill":[100305.98,197],"Coolcore\tCP Sports Chill Towel":[74565.29,159],"Coolcore\tHeadband Studio":[26934.75,86],"VFF\tVFF Socks Mini Crew Summer":[23551.4,43],"VFF\tVFF KSO EVO":[149938.77,32],"VFF\tVFF V-Run":[242683.36,45],"Coolcore\tGolf Cap":[801.87,2],"VFF\tVFF Socks Crew Summer":[7198.6,12],"VFF\tVFF V-Soul":[393609.4,89],"VFF\tVFF Trailope":[33723.36,6],"VFF\tVFF Breezandal":[96909.53,18],"VFF\tVFF V-Train 2.0":[5794.39,1],"VFF\tVFF Graspifier":[63104.67,14],"VFF\tVFF Socks High Crew Summer":[3172.9,5],"BFJ\tBFJ Free Socks":[0.0,4],"Coolcore\tRunning Cap":[2930.84,6],"Knockaround\tKnockaround PPSB3391":[1074.77,1],"BFJ\tBFJ Socks":[24635.51,69],"VFF\tVFF V-Alpha":[26181.31,5],"Oleno\tOleno Ultimate":[20379.81,25],"Knockaround\tKnockaround FLSK3080":[3224.3,3],"Knockaround\tKnockaround PPSB3347":[1074.77,1],"Coolcore\tT-Shirt":[1099.07,4],"Oleno\tOleno Arm Sleeve UL With Thumb Hole":[9644.86,13],"Coolcore\tHeadband Run 2":[2472.9,9],"Swans\tSwans SR81M LSIL":[1766.36,1],"Knockaround\tKnockaround FLRS3001":[3224.3,3],"Oleno\tOleno Ultimate ASO":[8532.55,10],"Knockaround\tKnockaround FPLM4363":[2570.09,1],"Knockaround\tKnockaround FPSB2365":[6661.68,3],"VFF\tVFF Spidrwalk":[43145.42,8],"Oleno\tOleno Ultimate TNG":[3053.27,3],"Klean Kanteen\tTKWide Vacuum Insulated":[3548.74,3],"Knockaround\tKnockaround PSSK3080":[2149.53,2],"Oleno\tOleno Calf Protection":[841.12,1],"Swans\tSwans SACR 0701":[3997.85,1],"Knockaround\tKnockaround FPRS2366":[2224.14,1],"VFF\tVFF Groundsplay":[11241.12,2],"Swans\tSwans SALF 0767":[4121.5,1],"Swans\tSwans SW 45N SMBK":[738.32,1],"LUNA\tLUNA Venado 2.0":[6056.07,3],"Oleno\tOleno Ultimate SHR":[6896.26,8],"VFF\tVFF Scramkey":[5383.18,1],"VFF\tVFF KSO":[4895.33,1],"Knockaround\tKnockaround PSGM3385":[1042.52,1],"Knockaround\tKnockaround FSRB3369":[1168.22,1],"Knockaround\tKnockaround MTSO3354":[1074.77,1],"Knockaround\tKnockaround FPAV2399":[2242.99,1],"Oleno\tOleno Hadashi Socks Openfinger":[1196.26,1],"VFF\tVFF V-Trek":[5421.12,1],"Knockaround\tKnockaround FPRE4362":[2570.09,1],"Swans\tSwans SABE 0170":[4121.5,1]},"2026-04":{"Coolcore\tCP Arm Sleeves":[334000.49,496],"Coolcore\tCP Multi-Chill Open Ear":[47315.32,91],"Coolcore\tCP Multi-Chill":[77676.82,150],"Coolcore\tCP Outdoor Chill Towel":[41605.98,246],"Coolcore\tCP Sports Chill Towel":[52045.78,117],"Coolcore\tHeadband Studio":[12865.35,41],"Knockaround\tKnockaround FPSB2365":[2242.99,1],"VFF\tVFF KSO EVO":[107839.25,23],"VFF\tVFF V-Soul":[365327.1,83],"LUNA\tLUNA Venado 2.0":[4037.38,2],"BFJ\tBFJ Socks":[9569.69,39],"VFF\tVFF Spidrwalk":[64314.87,12],"Oleno\tOleno Arm Sleeve UL":[12927.1,20],"VFF\tVFF Socks Crew Summer":[3007.01,5],"Coolcore\tT-Shirt":[824.3,3],"Knockaround\tKnockaround PSAQ3310":[1074.77,1],"Oleno\tOleno Arm Sleeve UL With Thumb Hole":[5233.64,7],"Oleno\tOleno Ultimate":[13371.78,17],"Coolcore\tMulti-Chill Relax":[196.26,1],"Coolcore\tSports Chill Towel":[251.87,1],"Coolcore\tForearm Shiver":[2326.17,13],"VFF\tVFF V-Run":[199619.36,37],"VFF\tVFF Socks Mini Crew Summer":[21577.57,40],"Coolcore\tHeadband Run 2":[541.29,2],"Coolcore\tHelmet Chiller":[1256.07,4],"VFF\tVFF Breezandal":[64941.68,12],"VFF\tVFF KSO":[4794.39,1],"Oleno\tOleno Ultimate SHR":[2582.8,3],"Knockaround\tKnockaround PSSK3080":[1074.77,1],"Coolcore\tGolf Cap":[2697.2,7],"VFF\tVFF Trailope":[22366.36,4],"Oleno\tOleno Ultimate ASO":[6079.25,7],"VFF\tVFF KMD Evo":[12785.05,2],"VFF\tVFF V-Alpha":[36642.99,7],"VFF\tVFF Graspifier":[26879.44,6],"Knockaround\tKnockaround FSRM3325":[1074.77,1],"Knockaround\tKnockaround PSGM3385":[1074.77,1],"Coolcore\tRunning Cap":[4932.06,10],"Swans\tSwans ER3 0170":[4487.38,1],"Swans\tSwans SR81M SMOR":[1713.36,1],"Knockaround\tKnockaround TSPS3309":[1261.68,1],"Coolcore\tArm Sleeves":[497.2,1],"Oleno\tOleno Hadashi Socks Road":[2392.52,2],"Knockaround\tKnockaround FPAV2399":[2242.99,1],"Knockaround\tKnockaround PSRB3208":[1074.77,1],"VFF\tVFF V-Trek":[16039.81,3],"Swans\tSwans FO 4417":[6935.05,1],"Swans\tSwans SW 45N SMBK":[738.32,1],"Swans\tSwans SW 45N SMPUR":[738.32,1],"Knockaround\tKnockaround PSYB3314":[1074.77,1],"Knockaround\tKnockaround TSMS3239":[1261.68,1],"Knockaround\tKnockaround FLRS3001":[1074.77,1],"Swans\tSwans ENNG3 0714":[5629.63,1],"VFF\tVFF Socks High Crew Summer":[1897.2,3],"Oleno\tOleno Calf Supporten Bicolor":[747.66,1],"VFF\tVFF V-Train 2.0":[11241.12,2],"Knockaround\tKnockaround PPSB3391":[1074.77,1],"VFF\tVFF Scramkey":[5708.41,1],"VFF\tVFF Groundsplay":[5504.67,1],"Knockaround\tKnockaround FSSK3001":[1021.03,1],"Swans\tSwans ER1 0168":[4487.38,1],"Swans\tSwans FO 3501":[6312.62,1],"Swans\tSwans LI SIN 1701":[5513.55,1],"Knockaround\tKnockaround PPMT3287":[1074.77,1],"Oleno\tOleno Calf Protection":[1682.24,2],"Klean Kanteen\tTKWide Vacuum Insulated":[2306.59,2],"Swans\tSwans SWB-1 SCLA":[831.78,1],"Knockaround\tKnockaround PSLM4363":[1869.16,1],"Knockaround\tKnockaround FLSK3080":[1074.77,1],"Knockaround\tKnockaround TSAQ3360":[1448.6,1],"Coolcore\tCoolcore T-Shirt เสื้อยืดคอวี [ผู้หญิง] เย็น ใส่สบาย ซับเหงื่อดี กันแดด กัน UV":[444.21,1],"Coolcore\tBucket Hat":[444.86,1],"Knockaround\tKnockaround PMSK3352":[1074.77,1]},"2026-06":{"Coolcore\tCP Arm Sleeves":[391655.48,591],"Coolcore\tCP Multi-Chill":[56703.55,117],"Coolcore\tCP Multi-Chill Open Ear":[47117.76,92],"Coolcore\tCP Outdoor Chill Towel":[24458.09,164],"Coolcore\tCP Sports Chill Towel":[63035.41,131],"Coolcore\tMulti-Chill 21":[785.05,2],"Coolcore\tSports Chill Towel":[251.87,1],"Oleno\tOleno Arm Sleeve UL":[23682.24,38],"Swans\tSW0022 CR 3114":[5906.54,1],"Swans\tSwans FO 0166":[6654.21,1],"Swans\tSW0025 LI SIN":[27858.21,8],"Coolcore\tForearm Shiver":[4082.24,23],"VFF\tVFF V-Soul":[593160.38,134],"Oleno\tOleno Ultimate":[12995.75,16],"Oleno\tOleno Ultimate SHR":[5218.32,6],"VFF\tVFF Scramkey":[20210.84,4],"VFF\tVFF V-Run":[204661.31,38],"VFF\tVFF V-Trek":[10842.24,2],"Klean Kanteen\tRecycled Steel Straw":[709.36,1],"Klean Kanteen\tTKCanister Vacuum Insulated":[2395.31,2],"Coolcore\tT-Shirt":[1923.36,7],"VFF\tVFF Socks Mini Crew Summer":[11484.11,21],"Swans\tSwans SAMV 0751":[6728.97,2],"Swans\tSW0023 SACR2 0714":[18317.76,5],"Swans\tSwans STX DA 3114":[5158.88,1],"Coolcore\tHeadband Studio":[8155.07,26],"Swans\tSwans SALF 0051":[3663.55,1],"Swans\tSwans Lens ENN20 0714":[4205.61,1],"Swans\tSW0021 RAD SOL 0167":[8224.3,2],"BFJ\tBFJ Socks":[18149.53,48],"VFF\tVFF Groundsplay":[11241.12,2],"VFF\tVFF KSO EVO":[74759.99,16],"Knockaround\tKnockaround FPSB2365":[2242.99,1],"Oleno\tOleno Hadashi Socks Road":[2392.52,2],"BFJ\tBFJ Free Socks":[0.0,12],"Swans\tSwans SR81M SMBL":[1766.36,1],"Oleno\tOleno Calf Protection":[4794.39,6],"Swans\tSW0001 EN8G2 1701":[5158.88,1],"Swans\tSwans SAMV 0051":[3364.49,1],"Swans\tSW0016 SALF 0066":[4112.15,1],"Swans\tSW0001 EN8G2 3516":[10317.76,2],"Oleno\tOleno Arm Sleeve UL With Thumb Hole":[10841.12,15],"Swans\tSwans ENN20 0066":[5906.54,1],"Swans\tSW0025 Sporteers":[556.07,1],"Knockaround\tKnockaround MTSO3354":[1074.77,1],"Coolcore\tArm Sleeves":[523.36,1],"Coolcore\tMulti-Chill Relax":[196.26,1],"Swans\tSwans OG5 0751":[13457.94,4],"Swans\tSWANS กล่องแว่น":[420.56,3],"Swans\tSW0025 SOU-2":[10280.37,4],"Swans\tSW0002 ENNG3 0801":[5158.88,1],"Swans\tSW0025 STRIX":[6448.6,2],"Swans\tSwans FO 3114":[5906.54,1],"Swans\tSwans ER2 0167":[8599.53,2],"Swans\tSwans SAMV 1051":[6728.97,2],"Swans\tSW0022 CR 3516":[5906.54,1],"Swans\tSwans OG4 0751":[3364.49,1],"VFF\tVFF V-Alpha":[20814.95,4],"VFF\tVFF Spidrwalk":[27105.61,5],"VFF\tVFF Breezandal":[80646.17,15],"Coolcore\tRunning Cap":[2198.13,4],"VFF\tVFF Graspifier":[54169.16,12],"Swans\tSwans SW 45N NAV":[738.32,1],"Knockaround\tKnockaround FPSK2080":[2242.99,1],"Swans\tSwans SAMV 0714":[6728.97,2],"Knockaround\tKnockaround PSSK3080":[1074.77,1],"Swans\tSwans EN8 0066":[5906.54,1],"Swans\tSW0021 RAD SOL 0151":[4112.15,1],"Swans\tSW0023 SACR2 0167":[7327.1,2],"Swans\tSW0021 RAD DEL 0714":[4112.15,1],"VFF\tVFF Trailope":[22134.58,4],"Klean Kanteen\tRise Tumbler":[1330.89,1],"Klean Kanteen\tRise Low Ball":[1064.53,1],"Swans\tSwans SR81M SMOR":[1766.36,1],"Klean Kanteen\tRise Mug":[1508.46,1],"VFF\tVFF V-Train 2.0":[11241.12,2],"Swans\tSwans ER2 0170":[4112.15,1],"Knockaround\tKnockaround FSRO3218":[1074.77,1],"Klean Kanteen\tTKWide Vacuum Insulated":[5766.4,5],"VFF\tVFF Socks High Crew Summer":[616.03,1],"Knockaround\tKnockaround PSMS3423":[1168.22,1],"Knockaround\tKnockaround TSCM3316":[1261.68,1],"Knockaround\tKnockaround FPLM4363":[2570.09,1],"Coolcore\tGolf Cap":[801.87,2],"Oleno\tOleno Ultimate ASO Long":[1196.26,1],"VFF\tVFF Socks Crew Summer":[1196.73,2]},"2026-03":{"Coolcore\tCP Multi-Chill Open Ear":[45872.54,89],"Coolcore\tCP Sports Chill Towel":[18898.51,43],"Coolcore\tCP Outdoor Chill Towel":[16972.86,200],"Coolcore\tHeadband Run 2":[1373.83,5],"Coolcore\tCP Multi-Chill":[55046.86,110],"Coolcore\tCP Arm Sleeves":[307847.37,456],"Coolcore\tForearm Shiver":[2188.54,13],"Coolcore\tHeadband Studio":[13627.96,41],"Coolcore\tMulti-Chill 21":[392.52,1],"Coolcore\tSports Chill Towel":[503.74,2],"BFJ\tBFJ Socks":[30204.55,76],"VFF\tVFF Socks Mini Crew Summer":[23029.91,42],"VFF\tVFF V-Alpha":[31547.66,6],"VFF\tVFF Socks High Crew Summer":[1288.79,2],"VFF\tVFF V-Soul":[389457.94,88],"VFF\tVFF V-Run":[156689.72,29],"Coolcore\tRunning Cap":[3782.24,7],"VFF\tVFF KSO EVO":[126422.55,27],"Oleno\tOleno Arm Sleeve UL":[13738.32,21],"Coolcore\tGolf Cap":[1603.74,4],"Swans\tSwans SAMV 1051":[3785.05,1],"Oleno\tOleno Ultimate ASO":[2609.16,3],"VFF\tVFF Breezandal":[48495.21,9],"Oleno\tOleno Ultimate":[13857.94,17],"Oleno\tOleno Arm Sleeve UL With Thumb Hole":[9644.33,13],"Oleno\tOleno Ultimate ASO Long":[2392.52,2],"Oleno\tOleno Ultimate SHR":[1713.08,2],"Coolcore\tT-Shirt":[824.3,3],"Swans\tSwans SR7M PURRU":[1018.69,1],"Knockaround\tKnockaround TSMS3239":[2523.36,2],"Knockaround\tKnockaround PSSK3080":[2149.53,2],"VFF\tVFF Spidrwalk":[32303.18,6],"Knockaround\tKnockaround PSYB3314":[1074.77,1],"Swans\tSwans Lens ENN20 0714":[4205.61,1],"Swans\tSwans Lens ENN20 1101":[4205.61,1],"Knockaround\tKnockaround FPLM4364":[7710.28,3],"Swans\tSwans SACR 0701":[4121.5,1],"Coolcore\tArm Sleeves":[497.2,1],"Knockaround\tKnockaround TSAQ3360":[1448.6,1],"Swans\tSwans OG5 0751":[3785.05,1],"Swans\tSwans SAMV 0714":[3671.5,1],"Knockaround\tKnockaround TSPS3309":[1261.68,1],"Klean Kanteen\tTKWide Vacuum Insulated":[5323.55,4],"Swans\tSwans WA7 0167":[4626.17,1],"Swans\tSwans ENN20 0066":[6644.86,1],"Knockaround\tKnockaround FSYB3315":[1074.77,1],"VFF\tVFF V-Train 2.0":[22366.36,4],"Klean Kanteen\tSteel Straw":[229.95,1],"LUNA\tLUNA Venado 2.0":[6056.07,3],"VFF\tVFF V-Trek":[5421.12,1],"VFF\tVFF Trailope":[22827.1,4],"Knockaround\tKnockaround FPRE4362":[2570.09,1],"Knockaround\tKnockaround FPLM4363":[2570.09,1],"VFF\tVFF KMD Evo":[26108.41,4],"Knockaround\tKnockaround PMSK3352":[1074.77,1],"VFF\tVFF KSO":[4895.33,1],"Knockaround\tKnockaround PSLM4363":[1869.16,1],"Knockaround\tKnockaround PSRB3208":[1028.81,1],"Oleno\tOleno Calf Protection":[841.12,1],"Knockaround\tKnockaround FSRG3384":[1074.77,1],"Knockaround\tKnockaround PSAQ3360":[1074.77,1],"Knockaround\tKnockaround PPSB3347":[1074.77,1],"Swans\tSwans LI SIN 0151":[6308.41,1],"Swans\tSwans ER1 0167":[4626.17,1],"Swans\tSwans FO 0166":[7485.98,1],"Knockaround\tKnockaround TSCM3386":[1448.6,1],"VFF\tVFF Socks Crew Summer":[589.25,1],"Swans\tSwans SJ9N BL":[644.86,1]},"2026-02":{"Klean Kanteen\tRise Tumbler":[3951.03,3],"Coolcore\tForearm Shiver":[1143.93,7],"Coolcore\tCP Arm Sleeves":[285991.37,419],"Coolcore\tCP Multi-Chill":[76073.89,145],"Coolcore\tCP Multi-Chill Open Ear":[40545.13,79],"Coolcore\tCP Outdoor Chill Towel":[22575.1,225],"Coolcore\tCP Sports Chill Towel":[16028.23,51],"VFF\tVFF V-Soul":[345458.37,78],"BFJ\tBFJ Socks":[11011.48,39],"VFF\tVFF V-Run":[165514.84,31],"VFF\tVFF KSO EVO":[51757.01,11],"VFF\tVFF Socks Mini Crew Summer":[17933.29,33],"VFF\tVFF Trailope":[22108.72,4],"Oleno\tOleno Arm Sleeve UL With Thumb Hole":[5211.21,7],"Knockaround\tKnockaround TSMS3239":[1261.68,1],"Oleno\tOleno Ultimate":[11296.5,14],"Knockaround\tKnockaround PPSK3080":[1074.77,1],"Oleno\tOleno Arm Sleeve UL":[4579.44,7],"Oleno\tOleno Hadashi Socks Road":[2356.64,2],"Oleno\tOleno Hadashi Socks Openfinger":[2356.64,2],"Coolcore\tHeadband Studio":[6979.29,21],"Knockaround\tKnockaround PSLM4363":[1869.16,1],"VFF\tVFF Breezandal":[53773.27,10],"Coolcore\tMulti-Chill 21":[196.26,1],"VFF\tVFF V-Train 2.0":[16861.68,3],"Klean Kanteen\tTKWide":[407.52,1],"Klean Kanteen\tTKWide Vacuum Insulated":[9138.64,7],"Knockaround\tKnockaround PPSB3391":[1074.77,1],"VFF\tVFF V-Alpha":[67934.58,13],"Knockaround\tKnockaround PSMS3200":[1074.77,1],"Knockaround\tKnockaround PSAQ3168":[2095.79,2],"Knockaround\tKnockaround FPAV2399":[2242.99,1],"Knockaround\tKnockaround PSAQ3360":[1074.77,1],"Swans\tSwans STX DA 0167":[5803.74,1],"Coolcore\tMulti-Chill Relax":[196.26,1],"Swans\tSwans ENN20 0714":[11607.48,2],"VFF\tVFF V-Trek":[21530.31,4],"Klean Kanteen\tTKWide Café Cap":[380.89,1],"Knockaround\tKnockaround FLSK3080":[1074.77,1],"Swans\tSwans STX DA 3114":[5803.74,1],"Swans\tSwans SAMV 1051":[3785.05,1],"Coolcore\tGolf Cap":[437.38,1],"Knockaround\tKnockaround TSCM3316":[2523.36,2],"Swans\tSwans SACR 0701":[4121.5,1],"VFF\tVFF Socks Crew Summer":[1725.2,3],"Knockaround\tKnockaround FPRS2366":[2242.99,1],"Swans\tSwans ER1 0168":[4626.17,1],"Coolcore\tRunning Cap":[2747.66,3],"VFF\tVFF KMD Evo":[19395.67,3],"VFF\tVFF CVT-Leather":[10362.31,2],"VFF\tVFF Socks High Crew Summer":[1242.99,2],"VFF\tVFF CVT-Hemp":[4895.33,1],"VFF\tVFF Spidrwalk":[10683.74,2],"Knockaround\tKnockaround TSAQ3360":[2897.2,2],"LUNA\tLUNA Venado 2.0":[5996.32,3],"Knockaround\tKnockaround FPLM4363":[2570.09,1],"VFF\tVibram Furoshiki Eco F":[2327.1,1],"Swans\tSwans ER2 0170":[4626.17,1],"Knockaround\tKnockaround FPSB2365":[2175.7,1],"Knockaround\tKnockaround FPLM4364":[2492.99,1],"VFF\tSocks Pack1":[353.55,1],"Oleno\tOleno Ultimate SHR":[852.15,1],"Klean Kanteen\tFood Boxes":[2147.66,2],"LUNA\tLUNA Mono":[2319.98,1],"Oleno\tOleno Calf Protection":[841.12,1],"Oleno\tOleno Ultimate ASO":[852.15,1]},"2026-01":{"Coolcore\tCP Multi-Chill":[83919.1,164],"Coolcore\tCP Arm Sleeves":[282079.48,414],"Coolcore\tCP Outdoor Chill Towel":[27951.4,279],"VFF\tVFF V-Soul":[531891.59,120],"VFF\tVFF V-Run":[284405.44,53],"Oleno\tOleno Ultimate":[22633.27,28],"Coolcore\tCP Sports Chill Towel":[17914.95,43],"VFF\tVFF V-Alpha":[67628.55,13],"VFF\tVFF V-Trek":[54043.55,10],"BFJ\tBFJ Socks":[30672.46,134],"VFF\tVFF Trailope":[27326.71,5],"Coolcore\tHeadband Run 2":[1326.34,4],"VFF\tVibram Furoshiki Eco F":[2327.1,1],"Coolcore\tCP Multi-Chill Open Ear":[42233.64,83],"Coolcore\tHeadband Studio":[7374.69,20],"VFF\tVFF KSO EVO":[25834.77,6],"Coolcore\tBucket Hat":[444.86,1],"VFF\tVFF V-Aqua":[8700.93,2],"Oleno\tOleno Ultimate SHR":[4208.04,5],"Oleno\tOleno Arm Sleeve UL":[1962.62,3],"Klean Kanteen\tTKWide Vacuum Insulated":[4879.63,4],"VFF\tVFF CVT-Hemp":[8932.71,2],"Oleno\tOleno Ultimate ASO":[8662.06,10],"LUNA\tLUNA Mono":[4710.28,2],"VFF\tVFF Scramkey":[11364.49,2],"VFF\tVFF V-Trail 2.0":[9594.39,2],"Oleno\tOleno Hadashi Socks Road":[3428.56,3],"Swans\tSwans ENN20 0714":[11433.36,2],"VFF\tVFF Spidrwalk":[37836.07,7],"VFF\tVFF KSO":[9790.65,2],"VFF\tVFF Graspifier":[13051.4,3],"VFF\tVFF Breezandal":[37612.52,7],"VFF\tVFF V-Train 2.0":[39112.15,7],"Oleno\tOleno Hadashi Socks Openfinger":[1136.45,1],"Knockaround\tKnockaround MTSO3354":[1074.77,1],"Swans\tSwans SPB 0167":[6308.41,1],"Oleno\tOleno Calf Protection":[841.12,1],"Knockaround\tKnockaround FSAQ3360":[1074.77,1],"Oleno\tOleno Ultimate TNG":[1028.04,1],"Coolcore\tRunning Cap":[2480.08,3],"VFF\tVFF KMD Evo":[12919.63,2],"LUNA\tLUNA Venado 2.0":[4037.38,2],"Knockaround\tKnockaround FSMT3182":[1074.77,1],"Knockaround\tKnockaround TSAQ3360":[1448.6,1],"Coolcore\tArm Sleeves":[497.2,1],"Swans\tSwans LI SIN 0066":[6445.51,1],"Coolcore\tMulti-Chill 21":[392.52,1],"Coolcore\tSports Chill Towel":[251.87,1],"Coolcore\tMulti-Chill Relax":[588.79,3],"Knockaround\tKnockaround FLSK3080":[1074.77,1],"Knockaround\tKnockaround PSSK3080":[1074.77,1],"Swans\tSwans OG5 0751":[3785.05,1],"Knockaround\tKnockaround FPRS2366":[2242.99,1],"Oleno\tOleno Arm Sleeve UL With Thumb Hole":[7454.21,10],"VFF\tVFF Socks Mini Crew Summer":[1087.85,2],"Coolcore\tGolf Cap":[874.77,2],"Knockaround\tKnockaround FPAV2399":[4485.98,2],"Knockaround\tKnockaround FPSK2080":[2242.99,1],"Swans\tSwans SAMV 0065":[3785.05,1],"Knockaround\tKnockaround TSCM3316":[1261.68,1],"Knockaround\tKnockaround PSRB3369":[1168.22,1],"Klean Kanteen\tRise Tumbler":[1721.57,1],"Swans\tSwans OG4 0751":[3671.5,1],"Swans\tSwans OG4 0168":[3671.5,1],"Knockaround\tKnockaround PSMS3173":[1074.77,1],"Knockaround\tKnockaround FPRE4362":[2570.09,1],"Coolcore\tForearm Shiver":[314.02,2]}},"excluded":{"interco_goods":79502.8,"interco_service":2808576.0,"non_product":373.83}};
+
+/* ------------------------------------------------------------------ i18n */
+const I18N = {
+  ja: {
+    title:'EDV 販売実績ダッシュボード',
+    tab_overview:'全体', tab_channels:'チャネル別', tab_products:'商品・ブランド別', tab_about:'このデータについて',
+    s_summary:'全体サマリー', s_monthly:'月次推移(チャネル区分別)', s_share:'チャネル別構成',
+    s_chtable:'チャネル別 売上テーブル', s_chdetail:'チャネルごとの詳細',
+    chd_monthly:'月次推移', chd_brand:'ブランド構成',
+    s_brand:'ブランド別売上構成', s_model:'モデル別ランキング',
+    m_amount:'金額', m_qty:'点数',
+    k_sales:'売上金額(税抜)', k_qty:'販売点数', k_orders:'伝票数', k_aov:'客単価(税抜)',
+    unit_thb:'THB', unit_pcs:'点', unit_orders:'件',
+    show_detail:'実績詳細を表示', hide_detail:'実績詳細を隠す',
+    more:'もっと見る', less:'閉じる',
+    col_channel:'チャネル', col_group:'区分', col_amount:'売上金額', col_share:'構成比', col_qty:'点数', col_orders:'伝票数', col_aov:'客単価',
+    col_brand:'ブランド', col_model:'モデル', col_rank:'#', total:'合計',
+    all_channels:'全チャネル', all_brands:'全ブランド',
+    note_exvat:'金額はすべて税抜(VAT 7% 控除後)。伝票数は注文単位。',
+    note_sort:'列見出しをクリックすると並び替えできます。',
+    note_fold:'ドーナツは上位7ブランド+「その他」に集約。表は全ブランドを表示。',
+    note_model:'モデル名は商品名の「(」より前を使用(色・サイズ違いを統合)。',
+    period_label:'対象期間', updated:'データ更新', source:'出典',
+    p_all:'累計', p_h1:'上期(1〜6月)', p_q1:'Q1(1〜3月)', p_q2:'Q2(4〜6月)', p_q3:'Q3',
+    g_store:'実店舗', g_online:'オンライン', g_event:'イベント', g_consignment:'委託販売', g_other:'その他',
+    ch_Online:'Online(SNS・直販)', ch_Consignment:'委託販売', ch_Event:'イベント', ch_Other:'その他(法人販売)',
+    b_Others:'その他',
+    no_data:'この期間のデータはありません',
+  },
+  en: {
+    title:'EDV Sales Performance Dashboard',
+    tab_overview:'Overview', tab_channels:'By channel', tab_products:'Products & brands', tab_about:'About this data',
+    s_summary:'Summary', s_monthly:'Monthly trend by channel group', s_share:'Channel mix',
+    s_chtable:'Sales by channel', s_chdetail:'Channel detail',
+    chd_monthly:'Monthly trend', chd_brand:'Brand mix',
+    s_brand:'Sales by brand', s_model:'Model ranking',
+    m_amount:'Amount', m_qty:'Units',
+    k_sales:'Sales (ex-VAT)', k_qty:'Units sold', k_orders:'Orders', k_aov:'Avg. order (ex-VAT)',
+    unit_thb:'THB', unit_pcs:'units', unit_orders:'orders',
+    show_detail:'Show monthly figures', hide_detail:'Hide monthly figures',
+    more:'Show more', less:'Show less',
+    col_channel:'Channel', col_group:'Group', col_amount:'Sales', col_share:'Share', col_qty:'Units', col_orders:'Orders', col_aov:'Avg. order',
+    col_brand:'Brand', col_model:'Model', col_rank:'#', total:'Total',
+    all_channels:'All channels', all_brands:'All brands',
+    note_exvat:'All amounts exclude 7% VAT. Orders are counted per sales order.',
+    note_sort:'Click a column header to sort.',
+    note_fold:'The donut shows the top 7 brands plus "Others"; the table lists every brand.',
+    note_model:'Model = product name before "(" (colors and sizes merged).',
+    period_label:'Period', updated:'Data updated', source:'Source',
+    p_all:'YTD', p_h1:'H1 (Jan–Jun)', p_q1:'Q1 (Jan–Mar)', p_q2:'Q2 (Apr–Jun)', p_q3:'Q3',
+    g_store:'Stores', g_online:'Online', g_event:'Events', g_consignment:'Consignment', g_other:'Other',
+    ch_Online:'Online (social/direct)', ch_Consignment:'Consignment', ch_Event:'Event', ch_Other:'Other (B2B)',
+    b_Others:'Others',
+    no_data:'No data for this period',
+  },
+  th: {
+    title:'แดชบอร์ดยอดขาย EDV',
+    tab_overview:'ภาพรวม', tab_channels:'ตามช่องทาง', tab_products:'สินค้าและแบรนด์', tab_about:'เกี่ยวกับข้อมูลนี้',
+    s_summary:'สรุปภาพรวม', s_monthly:'แนวโน้มรายเดือนตามกลุ่มช่องทาง', s_share:'สัดส่วนตามช่องทาง',
+    s_chtable:'ยอดขายตามช่องทาง', s_chdetail:'รายละเอียดแต่ละช่องทาง',
+    chd_monthly:'แนวโน้มรายเดือน', chd_brand:'สัดส่วนแบรนด์',
+    s_brand:'ยอดขายตามแบรนด์', s_model:'อันดับรุ่นสินค้า',
+    m_amount:'ยอดเงิน', m_qty:'จำนวนชิ้น',
+    k_sales:'ยอดขาย (ไม่รวม VAT)', k_qty:'จำนวนชิ้นที่ขาย', k_orders:'จำนวนบิล', k_aov:'ยอดเฉลี่ยต่อบิล (ไม่รวม VAT)',
+    unit_thb:'บาท', unit_pcs:'ชิ้น', unit_orders:'บิล',
+    show_detail:'แสดงตัวเลขรายเดือน', hide_detail:'ซ่อนตัวเลขรายเดือน',
+    more:'ดูเพิ่มเติม', less:'ย่อ',
+    col_channel:'ช่องทาง', col_group:'กลุ่ม', col_amount:'ยอดขาย', col_share:'สัดส่วน', col_qty:'ชิ้น', col_orders:'บิล', col_aov:'เฉลี่ย/บิล',
+    col_brand:'แบรนด์', col_model:'รุ่น', col_rank:'#', total:'รวม',
+    all_channels:'ทุกช่องทาง', all_brands:'ทุกแบรนด์',
+    note_exvat:'ยอดเงินทั้งหมดไม่รวม VAT 7% จำนวนบิลนับตามใบสั่งขาย',
+    note_sort:'คลิกหัวคอลัมน์เพื่อเรียงลำดับ',
+    note_fold:'กราฟโดนัทแสดง 7 แบรนด์แรกและ "อื่นๆ" ส่วนตารางแสดงทุกแบรนด์',
+    note_model:'ชื่อรุ่น = ชื่อสินค้าก่อนเครื่องหมาย "(" (รวมสีและไซซ์)',
+    period_label:'ช่วงเวลา', updated:'อัปเดตข้อมูล', source:'ที่มา',
+    p_all:'สะสม', p_h1:'ครึ่งปีแรก (ม.ค.–มิ.ย.)', p_q1:'Q1 (ม.ค.–มี.ค.)', p_q2:'Q2 (เม.ย.–มิ.ย.)', p_q3:'Q3',
+    g_store:'หน้าร้าน', g_online:'ออนไลน์', g_event:'อีเวนต์', g_consignment:'ฝากขาย', g_other:'อื่นๆ',
+    ch_Online:'ออนไลน์ (โซเชียล/ขายตรง)', ch_Consignment:'ฝากขาย', ch_Event:'อีเวนต์', ch_Other:'อื่นๆ (ขายนิติบุคคล)',
+    b_Others:'อื่นๆ',
+    no_data:'ไม่มีข้อมูลในช่วงเวลานี้',
+  },
+};
+const MONTHS = {
+  ja:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
+  en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  th:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'],
+};
+let LANG = 'ja';
+try { const s = localStorage.getItem('edv_lang'); if (s && I18N[s]) LANG = s; } catch (e) {}
+const t = k => (I18N[LANG][k] ?? I18N.ja[k] ?? k);
+const mName = m => MONTHS[LANG][+m.slice(5) - 1];
+const chName = c => I18N[LANG]['ch_' + c] || c;
+const gName = g => t('g_' + g);
+const bName = b => (b === 'Others' ? t('b_Others') : b);
+
+/* ------------------------------------------------------------------ data helpers */
+const M = DATA.months;
+const CH = DATA.channels.map(c => c.key);
+const GROUP_OF = Object.fromEntries(DATA.channels.map(c => [c.key, c.group]));
+const GROUPS = DATA.groups;
+const GCOLOR = g => `var(--g-${g})`;
+const BRAND_HUES = ['#3987e5','#d95926','#199e70','#c98500','#d55181','#008300','#9085e9'];
+const TOP_BRANDS = DATA.brands.filter(b => b !== 'Others').slice(0, 7);
+const brandColor = b => { const i = TOP_BRANDS.indexOf(b); return i >= 0 ? BRAND_HUES[i] : 'var(--other-gray)'; };
+
+function periods() {
+  const ps = [{ id: 'all', months: M, label: `${t('p_all')} (${mName(M[0])}–${mName(M[M.length - 1])})` }];
+  const q = (ids) => M.filter(m => ids.includes(+m.slice(5)));
+  const add = (id, ms, label) => { if (ms.length) ps.push({ id, months: ms, label }); };
+  if (q([1,2,3,4,5,6]).length === 6) add('h1', q([1,2,3,4,5,6]), t('p_h1'));
+  if (q([1,2,3]).length === 3) add('q1', q([1,2,3]), t('p_q1'));
+  if (q([4,5,6]).length === 3) add('q2', q([4,5,6]), t('p_q2'));
+  const q3 = q([7,8,9]);
+  if (q3.length) add('q3', q3, `${t('p_q3')} (${mName(q3[0])}–${mName(q3[q3.length - 1])})`);
+  M.slice().reverse().forEach(m => add(m, [m], `${m.slice(0, 4)} ${mName(m)}`));
+  return ps;
+}
+const periodMonths = id => (periods().find(p => p.id === id) || periods()[0]).months;
+
+function chSum(ch, months) {           // -> [amt, qty, orders]
+  const r = [0, 0, 0];
+  months.forEach(m => { const v = DATA.ch[ch]?.[m]; if (v) { r[0] += v[0]; r[1] += v[1]; r[2] += v[2]; } });
+  return r;
+}
+function brandSum(channels, months) { // -> {brand: [amt, qty]}
+  const out = {};
+  channels.forEach(c => months.forEach(m => {
+    const bb = DATA.ch_brand[c]?.[m]; if (!bb) return;
+    for (const b in bb) { const o = out[b] || (out[b] = [0, 0]); o[0] += bb[b][0]; o[1] += bb[b][1]; }
+  }));
+  return out;
+}
+
+const fmt = (v, d = 0) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = (v, tot) => tot ? (v / tot * 100).toFixed(1) + '%' : '–';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const sw = c => `<i class="sw" style="background:${c}"></i>`;
+
+/* ------------------------------------------------------------------ tooltip */
+const tip = document.getElementById('tip');
+function showTip(e, html) {
+  tip.innerHTML = html; tip.style.display = 'block';
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+}
+const hideTip = () => { tip.style.display = 'none'; };
+
+/* ------------------------------------------------------------------ state */
+const S = {
+  kpiPeriod: 'all', monthlyMetric: 'amt', monthlyDetail: false,
+  sharePeriod: 'all', shareMetric: 'amt',
+  chtPeriod: 'all', chtSort: { key: 'amt', dir: -1 },
+  chdChannel: 'K village', chdPeriod: 'all',
+  brChannel: 'all', brPeriod: 'all', brMetric: 'amt',
+  mdBrand: 'all', mdPeriod: 'all', mdMetric: 'amt', mdShowAll: false,
+};
+
+function fillSelect(id, options, value) {
+  const el = document.getElementById(id);
+  el.innerHTML = options.map(o => `<option value="${esc(o.id)}"${o.id === value ? ' selected' : ''}>${esc(o.label)}</option>`).join('');
+}
+function bindSelect(id, key, render) {
+  document.getElementById(id).addEventListener('change', e => { S[key] = e.target.value; render(); });
+}
+function bindSeg(id, key, render) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    S[key] = b.dataset.v;
+    el.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+    render();
+  });
+}
+
+/* ------------------------------------------------------------------ overview: KPIs */
+function renderKpis() {
+  const ms = periodMonths(S.kpiPeriod);
+  const byG = {}; let tot = [0, 0, 0];
+  CH.forEach(c => { const v = chSum(c, ms); const g = GROUP_OF[c];
+    const o = byG[g] || (byG[g] = [0, 0, 0]); for (let i = 0; i < 3; i++) { o[i] += v[i]; tot[i] += v[i]; } });
+  const bars = (i) => `<div class="bars">${GROUPS.map(g => {
+    const v = byG[g]?.[i] || 0, p = tot[i] ? v / tot[i] * 100 : 0;
+    return `<div class="hbar"><span>${esc(gName(g))}</span><div class="track"><div class="fill" style="width:${p}%;background:${GCOLOR(g)}"></div></div><span class="pct">${p.toFixed(0)}%</span></div>`;
+  }).join('')}</div>`;
+  const aov = tot[2] ? tot[0] / tot[2] : 0;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="lbl">${t('k_sales')}</div><div class="val">${fmt(tot[0])}<span class="unit">${t('unit_thb')}</span></div>${bars(0)}</div>
+    <div class="kpi"><div class="lbl">${t('k_qty')}</div><div class="val">${fmt(tot[1])}<span class="unit">${t('unit_pcs')}</span></div>${bars(1)}</div>
+    <div class="kpi"><div class="lbl">${t('k_orders')}</div><div class="val">${fmt(tot[2])}<span class="unit">${t('unit_orders')}</span></div>${bars(2)}</div>
+    <div class="kpi"><div class="lbl">${t('k_aov')}</div><div class="val">${fmt(aov)}<span class="unit">${t('unit_thb')}</span></div><div class="sub">${esc(periods().find(p => p.id === S.kpiPeriod)?.label || '')}</div></div>`;
+}
+
+/* ------------------------------------------------------------------ stacked monthly bar */
+// ~4 gridlines on a 1/2/2.5/5 x 10^n step, so ticks read 1M/2M/3M, not 1.3M/2.5M/3.8M
+function niceStep(v) {
+  if (v <= 0) return 1;
+  const raw = v / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+}
+const short = v => v >= 1e6 ? +(v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? +(v / 1e3).toFixed(1) + 'K' : fmt(v);
+
+// series: [{key,label,color,values:[per month]}], hover(mi, si) -> html
+function barChart(el, months, series, tipFor) {
+  // draw at the container's real pixel width so axis text stays 11px on phones
+  const W = Math.max(300, Math.round(el.clientWidth || 760)), H = W < 520 ? 240 : 300, L = 48, R = 4, T = 10, B = 28;
+  el._redraw = () => barChart(el, months, series, tipFor);
+  const tot = months.map((_, i) => series.reduce((s, x) => s + x.values[i], 0));
+  const step = niceStep(Math.max(...tot, 0)), max = step * Math.max(1, Math.ceil(Math.max(...tot, 0) / step));
+  const pw = W - L - R, ph = H - T - B, slot = pw / months.length, bw = Math.min(56, slot * 0.62);
+  const y = v => T + ph - v / max * ph;
+  let g = '<g class="axis">';
+  for (let v = 0; v <= max + step / 2; v += step) { const yy = y(v);
+    g += `<line class="${v ? 'grid' : 'base'}" x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}"/><text x="${L - 8}" y="${yy + 4}" text-anchor="end">${short(v)}</text>`; }
+  months.forEach((m, i) => { g += `<text x="${L + slot * i + slot / 2}" y="${H - 8}" text-anchor="middle">${esc(mName(m))}</text>`; });
+  g += '</g>';
+  let bars = '';
+  months.forEach((m, i) => {
+    const x = L + slot * i + (slot - bw) / 2;
+    let acc = 0;
+    const segs = series.map((s, si) => ({ s, si, v: s.values[i] })).filter(o => o.v > 0);
+    segs.forEach((o, k) => {
+      const y0 = y(acc), y1 = y(acc + o.v); acc += o.v;
+      const top = k === segs.length - 1, h = Math.max(0, y0 - y1 - (top ? 0 : 2));
+      const r = top ? Math.min(4, h) : 0;
+      const yt = y1 + (top ? 0 : 2);
+      const d = r ? `M${x},${yt + h} V${yt + r} Q${x},${yt} ${x + r},${yt} H${x + bw - r} Q${x + bw},${yt} ${x + bw},${yt + r} V${yt + h} Z`
+                  : `M${x},${yt + h} V${yt} H${x + bw} V${yt + h} Z`;
+      bars += `<path d="${d}" fill="${o.s.color}" data-mi="${i}" data-si="${o.si}"/>`;
+    });
+    bars += `<rect x="${L + slot * i}" y="${T}" width="${slot}" height="${ph}" fill="transparent" data-mi="${i}" data-col="1"/>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img">${g}${bars}</svg>`;
+  const svg = el.querySelector('svg');
+  svg.addEventListener('mousemove', e => {
+    const tgt = e.target.closest('[data-mi]'); if (!tgt) return hideTip();
+    showTip(e, tipFor(+tgt.dataset.mi));
+  });
+  svg.addEventListener('mouseleave', hideTip);
+}
+
+function renderMonthly() {
+  const idx = S.monthlyMetric === 'amt' ? 0 : 1;
+  const series = GROUPS.map(g => ({ key: g, color: GCOLOR(g),
+    values: M.map(m => CH.filter(c => GROUP_OF[c] === g).reduce((s, c) => s + (DATA.ch[c]?.[m]?.[idx] || 0), 0)) }));
+  document.getElementById('monthlyLegend').innerHTML = GROUPS.map(g => `<span>${sw(GCOLOR(g))}${esc(gName(g))}</span>`).join('');
+  barChart(document.getElementById('monthlyChart'), M, series, mi => {
+    const m = M[mi]; const tot = series.reduce((s, x) => s + x.values[mi], 0);
+    const rows = CH.map(c => [c, DATA.ch[c]?.[m]?.[idx] || 0]).filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]);
+    return `<div class="t">${esc(m.slice(0, 4) + ' ' + mName(m))} · ${fmt(tot)} ${idx ? t('unit_pcs') : t('unit_thb')}</div>` +
+      rows.map(([c, v]) => `<div class="r"><span>${sw(GCOLOR(GROUP_OF[c]))}${esc(chName(c))}</span><span>${fmt(v)}</span></div>`).join('');
+  });
+  const btn = document.getElementById('monthlyDetailBtn'), box = document.getElementById('monthlyDetail');
+  btn.textContent = S.monthlyDetail ? t('hide_detail') : t('show_detail');
+  box.hidden = !S.monthlyDetail;
+  if (S.monthlyDetail) {
+    const cols = M.map(m => ({ id: m, label: mName(m), months: [m] }));
+    periods().filter(p => ['q1', 'q2', 'q3', 'h1', 'all'].includes(p.id)).forEach(p => cols.push({ id: p.id, label: p.label, months: p.months }));
+    const val = (c, ms) => chSum(c, ms)[idx];
+    let h = `<table><thead><tr><th>${t('col_channel')}</th>${cols.map(c => `<th>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>`;
+    CH.forEach(c => { h += `<tr><td><span class="name-cell">${sw(GCOLOR(GROUP_OF[c]))}${esc(chName(c))}</span></td>${cols.map(col => `<td>${fmt(val(c, col.months))}</td>`).join('')}</tr>`; });
+    h += `<tr class="total"><td>${t('total')}</td>${cols.map(col => `<td>${fmt(CH.reduce((s, c) => s + val(c, col.months), 0))}</td>`).join('')}</tr></tbody></table>`;
+    box.innerHTML = h;
+  }
+}
+
+/* ------------------------------------------------------------------ donut ⇄ table */
+function donut(el, items, onHover) { // items: [{key,color,value}]
+  const S2 = 240, R = 110, r = 70, cx = S2 / 2, cy = S2 / 2;
+  const tot = items.reduce((s, i) => s + i.value, 0);
+  if (!tot) { el.innerHTML = `<p class="note">${t('no_data')}</p>`; return; }
+  let a0 = -Math.PI / 2, paths = '';
+  const gap = items.filter(i => i.value > 0).length > 1 ? 0.012 : 0;
+  items.forEach(it => {
+    if (it.value <= 0) return;
+    const a = it.value / tot * Math.PI * 2;
+    if (a >= Math.PI * 2 - 1e-6) {
+      paths += `<path data-k="${esc(it.key)}" fill="${it.color}" fill-rule="evenodd" d="M${cx + R},${cy} A${R},${R} 0 1 1 ${cx - R},${cy} A${R},${R} 0 1 1 ${cx + R},${cy} Z M${cx + r},${cy} A${r},${r} 0 1 0 ${cx - r},${cy} A${r},${r} 0 1 0 ${cx + r},${cy} Z"/>`;
+    } else {
+      const s = a0 + gap / 2, e = a0 + a - gap / 2, big = e - s > Math.PI ? 1 : 0;
+      const p = (rad, ang) => `${cx + rad * Math.cos(ang)},${cy + rad * Math.sin(ang)}`;
+      paths += `<path data-k="${esc(it.key)}" fill="${it.color}" d="M${p(R, s)} A${R},${R} 0 ${big} 1 ${p(R, e)} L${p(r, e)} A${r},${r} 0 ${big} 0 ${p(r, s)} Z"/>`;
+    }
+    a0 += a;
+  });
+  el.innerHTML = `<svg class="donut" viewBox="0 0 ${S2} ${S2}" style="max-width:280px;margin:0 auto">${paths}</svg>`;
+  const svg = el.querySelector('svg');
+  svg.addEventListener('mousemove', e => { const p = e.target.closest('path'); onHover(p ? p.dataset.k : null, e); });
+  svg.addEventListener('mouseleave', () => onHover(null));
+}
+function linkHighlight(donutEl, tableEl, key) {
+  const svg = donutEl.querySelector('svg');
+  if (svg) { svg.classList.toggle('dim', !!key); svg.querySelectorAll('path').forEach(p => p.classList.toggle('on', p.dataset.k === key)); }
+  tableEl.querySelectorAll('tr[data-k]').forEach(tr => tr.classList.toggle('hl', tr.dataset.k === key));
+}
+
+function renderShare() {
+  const ms = periodMonths(S.sharePeriod), idx = S.shareMetric === 'amt' ? 0 : 1;
+  const rows = CH.map(c => ({ c, g: GROUP_OF[c], v: chSum(c, ms)[idx] }));
+  const tot = rows.reduce((s, r) => s + r.v, 0);
+  const byG = GROUPS.map(g => ({ key: g, color: GCOLOR(g), value: rows.filter(r => r.g === g).reduce((s, r) => s + r.v, 0) }));
+  const dEl = document.getElementById('shareDonut'), tEl = document.getElementById('shareTable');
+  let h = `<table><thead><tr><th>${t('col_channel')}</th><th>${idx ? t('col_qty') : t('col_amount')}</th><th>${t('col_share')}</th></tr></thead><tbody>`;
+  GROUPS.forEach(g => {
+    const gr = rows.filter(r => r.g === g), gv = gr.reduce((s, r) => s + r.v, 0);
+    h += `<tr data-k="${g}"><td><span class="name-cell">${sw(GCOLOR(g))}<b>${esc(gName(g))}</b></span></td><td><b>${fmt(gv)}</b></td><td><b>${pct(gv, tot)}</b></td></tr>`;
+    if (gr.length > 1) gr.forEach(r => { h += `<tr class="sub" data-k="${g}"><td style="padding-left:28px">${esc(chName(r.c))}</td><td>${fmt(r.v)}</td><td>${pct(r.v, tot)}</td></tr>`; });
+  });
+  h += `<tr class="total"><td>${t('total')}</td><td>${fmt(tot)}</td><td>100%</td></tr></tbody></table>`;
+  tEl.innerHTML = h;
+  const hover = (k, e) => {
+    linkHighlight(dEl, tEl, k);
+    if (!k || !e) return hideTip();
+    const it = byG.find(x => x.key === k);
+    showTip(e, `<div class="t">${esc(gName(k))}</div><div class="r"><span>${fmt(it.value)}</span><span>${pct(it.value, tot)}</span></div>`);
+  };
+  donut(dEl, byG, hover);
+  tEl.querySelectorAll('tr[data-k]').forEach(tr => {
+    tr.addEventListener('mouseenter', () => linkHighlight(dEl, tEl, tr.dataset.k));
+    tr.addEventListener('mouseleave', () => linkHighlight(dEl, tEl, null));
+  });
+}
+
+/* ------------------------------------------------------------------ channels tab */
+function renderChTable() {
+  const ms = periodMonths(S.chtPeriod);
+  const rows = CH.map(c => { const [amt, qty, ord] = chSum(c, ms); return { c, g: GROUP_OF[c], amt, qty, ord, aov: ord ? amt / ord : 0 }; });
+  const tot = rows.reduce((s, r) => ({ amt: s.amt + r.amt, qty: s.qty + r.qty, ord: s.ord + r.ord }), { amt: 0, qty: 0, ord: 0 });
+  const { key, dir } = S.chtSort;
+  rows.sort((a, b) => key === 'name' ? dir * chName(a.c).localeCompare(chName(b.c)) : key === 'group' ? dir * (GROUPS.indexOf(a.g) - GROUPS.indexOf(b.g)) : dir * (a[key] - b[key]));
+  const th = (k, label) => `<th class="sortable" data-k="${k}">${esc(label)}${key === k ? ` <span class="arrow">${dir < 0 ? '▼' : '▲'}</span>` : ''}</th>`;
+  let h = `<table><thead><tr>${th('name', t('col_channel'))}${th('group', t('col_group'))}${th('amt', t('col_amount'))}<th>${t('col_share')}</th>${th('qty', t('col_qty'))}${th('ord', t('col_orders'))}${th('aov', t('col_aov'))}</tr></thead><tbody>`;
+  rows.forEach(r => { h += `<tr><td><span class="name-cell">${sw(GCOLOR(r.g))}${esc(chName(r.c))}</span></td><td>${esc(gName(r.g))}</td><td>${fmt(r.amt)}</td><td>${pct(r.amt, tot.amt)}</td><td>${fmt(r.qty)}</td><td>${fmt(r.ord)}</td><td>${fmt(r.aov)}</td></tr>`; });
+  h += `<tr class="total"><td>${t('total')}</td><td></td><td>${fmt(tot.amt)}</td><td>100%</td><td>${fmt(tot.qty)}</td><td>${fmt(tot.ord)}</td><td>${fmt(tot.ord ? tot.amt / tot.ord : 0)}</td></tr></tbody></table>`;
+  const el = document.getElementById('chTable'); el.innerHTML = h;
+  el.querySelectorAll('th.sortable').forEach(x => x.addEventListener('click', () => {
+    const k = x.dataset.k;
+    S.chtSort = { key: k, dir: S.chtSort.key === k ? -S.chtSort.dir : (k === 'name' || k === 'group' ? 1 : -1) };
+    renderChTable();
+  }));
+}
+
+function brandTable(bs, idx, totalLabelKey = 'total') {
+  const list = Object.entries(bs).map(([b, v]) => ({ b, v: v[idx] })).filter(x => x.v > 0).sort((a, b) => b.v - a.v);
+  const tot = list.reduce((s, x) => s + x.v, 0);
+  let h = `<table><thead><tr><th>${t('col_brand')}</th><th>${idx ? t('col_qty') : t('col_amount')}</th><th>${t('col_share')}</th></tr></thead><tbody>`;
+  list.forEach(x => { const k = TOP_BRANDS.includes(x.b) ? x.b : '__others';
+    h += `<tr data-k="${esc(k)}"><td><span class="name-cell">${sw(brandColor(x.b))}${esc(bName(x.b))}</span></td><td>${fmt(x.v)}</td><td>${pct(x.v, tot)}</td></tr>`; });
+  h += `<tr class="total"><td>${t(totalLabelKey)}</td><td>${fmt(tot)}</td><td>${tot ? '100%' : '–'}</td></tr></tbody></table>`;
+  return { html: h, list, tot };
+}
+
+function renderChDetail() {
+  const c = S.chdChannel, ms = periodMonths(S.chdPeriod), col = GCOLOR(GROUP_OF[c]);
+  barChart(document.getElementById('chdMonthly'), M,
+    [{ key: c, color: col, values: M.map(m => DATA.ch[c]?.[m]?.[0] || 0) }],
+    mi => { const m = M[mi], v = DATA.ch[c]?.[m] || [0, 0, 0];
+      return `<div class="t">${esc(chName(c))} · ${esc(m.slice(0, 4) + ' ' + mName(m))}</div>
+        <div class="r"><span>${t('col_amount')}</span><span>${fmt(v[0])}</span></div>
+        <div class="r"><span>${t('col_qty')}</span><span>${fmt(v[1])}</span></div>
+        <div class="r"><span>${t('col_orders')}</span><span>${fmt(v[2])}</span></div>`; });
+  const bs = brandSum([c], ms);
+  const amt = brandTable(bs, 0);
+  // brand mix as horizontal bars + numbers (single channel -> bar list reads better than a donut)
+  let h = `<table><thead><tr><th>${t('col_brand')}</th><th style="width:40%"></th><th>${t('col_amount')}</th><th>${t('col_share')}</th><th>${t('col_qty')}</th></tr></thead><tbody>`;
+  amt.list.forEach(x => { const p = amt.tot ? x.v / amt.tot * 100 : 0;
+    h += `<tr><td><span class="name-cell">${sw(brandColor(x.b))}${esc(bName(x.b))}</span></td><td><div class="hbar" style="grid-template-columns:1fr"><div class="track"><div class="fill" style="width:${p}%;background:${col}"></div></div></div></td><td>${fmt(x.v)}</td><td>${p.toFixed(1)}%</td><td>${fmt(bs[x.b][1])}</td></tr>`; });
+  h += `<tr class="total"><td>${t('total')}</td><td></td><td>${fmt(amt.tot)}</td><td>${amt.tot ? '100%' : '–'}</td><td>${fmt(Object.values(bs).reduce((s, v) => s + v[1], 0))}</td></tr></tbody></table>`;
+  document.getElementById('chdBrand').innerHTML = amt.list.length ? h : `<p class="note">${t('no_data')}</p>`;
+}
+
+/* ------------------------------------------------------------------ products tab */
+function renderBrand() {
+  const ms = periodMonths(S.brPeriod), idx = S.brMetric === 'amt' ? 0 : 1;
+  const chs = S.brChannel === 'all' ? CH : [S.brChannel];
+  const bs = brandSum(chs, ms);
+  const tb = brandTable(bs, idx);
+  const items = TOP_BRANDS.map(b => ({ key: b, color: brandColor(b), value: bs[b]?.[idx] || 0 }));
+  items.push({ key: '__others', color: 'var(--other-gray)', value: tb.list.filter(x => !TOP_BRANDS.includes(x.b)).reduce((s, x) => s + x.v, 0) });
+  const dEl = document.getElementById('brDonut'), tEl = document.getElementById('brTable');
+  tEl.innerHTML = tb.html;
+  const hover = (k, e) => {
+    linkHighlight(dEl, tEl, k);
+    if (!k || !e) return hideTip();
+    const it = items.find(x => x.key === k);
+    showTip(e, `<div class="t">${esc(k === '__others' ? t('b_Others') : k)}</div><div class="r"><span>${fmt(it.value)}</span><span>${pct(it.value, tb.tot)}</span></div>`);
+  };
+  donut(dEl, items, hover);
+  tEl.querySelectorAll('tr[data-k]').forEach(tr => {
+    tr.addEventListener('mouseenter', () => linkHighlight(dEl, tEl, tr.dataset.k));
+    tr.addEventListener('mouseleave', () => linkHighlight(dEl, tEl, null));
+  });
+}
+
+function renderModels() {
+  const ms = periodMonths(S.mdPeriod), idx = S.mdMetric === 'amt' ? 0 : 1;
+  const agg = {};
+  ms.forEach(m => { const mm = DATA.model[m] || {};
+    for (const k in mm) { const [b] = k.split('\t'); if (S.mdBrand !== 'all' && b !== S.mdBrand) continue;
+      const o = agg[k] || (agg[k] = [0, 0]); o[0] += mm[k][0]; o[1] += mm[k][1]; } });
+  const list = Object.entries(agg).map(([k, v]) => ({ b: k.split('\t')[0], m: k.split('\t')[1], amt: v[0], qty: v[1] }))
+    .filter(x => x[S.mdMetric] > 0).sort((a, b) => b[S.mdMetric] - a[S.mdMetric]);
+  const tot = list.reduce((s, x) => s + x[S.mdMetric], 0);
+  const shown = S.mdShowAll ? list : list.slice(0, 15);
+  let h = `<table><thead><tr><th>${t('col_rank')}</th><th style="text-align:left">${t('col_model')}</th><th style="text-align:left">${t('col_brand')}</th><th>${t('col_amount')}</th><th>${t('col_qty')}</th><th>${t('col_share')}</th></tr></thead><tbody>`;
+  shown.forEach((x, i) => { h += `<tr><td>${i + 1}</td><td style="text-align:left;white-space:normal">${esc(x.m)}</td><td style="text-align:left"><span class="name-cell">${sw(brandColor(x.b))}${esc(bName(x.b))}</span></td><td>${fmt(x.amt)}</td><td>${fmt(x.qty)}</td><td>${pct(x[S.mdMetric], tot)}</td></tr>`; });
+  h += '</tbody></table>';
+  document.getElementById('mdTable').innerHTML = list.length ? h : `<p class="note">${t('no_data')}</p>`;
+  const more = document.getElementById('mdMore');
+  more.hidden = list.length <= 15;
+  more.textContent = S.mdShowAll ? t('less') : `${t('more')} (${list.length - 15})`;
+}
+
+/* ------------------------------------------------------------------ about */
+const ABOUT = {
+  ja: d => `
+    <h3>このダッシュボードが示すもの</h3>
+    <p>Endeavors社(EDV)自身が顧客に販売した実績(小売)です。Barefoot Inc. の販売実績ダッシュボードにある「対EDV」は Barefoot から EDV への<b>卸請求額</b>で、ここで扱う数字とは別物です。</p>
+    <div class="warn">Barefoot側ダッシュボードとの重複: 2026年分のBarefoot側では、EDVの店舗・オンライン・イベント・委託の生データは読み込まれていません(「対EDV」に置換済み)。ただし Central 百貨店内の売場(Chidlom 等)の小売売上は Barefoot 側に計上されています。本ダッシュボードの「Central LP」は Coollabo(Central Ladprao 3F)の売場で、Barefoot 側の百貨店5店舗とは別の売場です。重複の扱いは両ダッシュボードを並べて確認したうえで決定します。</div>
+    <h3>チャネル区分(10区分)</h3>
+    ${mappingTable('ja')}
+    <h3>計上から除外したもの</h3>
+    <ul>
+      <li>EDV → Barefoot Inc. への請求(グループ内取引): サービス料(Marketing/Marketing Ads/Car rent/Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB、商品 <b>${fmt(d.excluded.interco_goods || 0)}</b> THB(いずれも税抜)</li>
+      <li>商品以外の行(資産売却など) ${fmt(d.excluded.non_product || 0)} THB</li>
+      <li>Status が Voided の注文</li>
+    </ul>
+    <h3>集計ルール</h3>
+    <ul>
+      <li>金額は注文の「Amount」(実請求額。注文単位の値引き後)を、各商品行の金額比で按分。税込で集計し、最後に 1.07 で割って税抜にしています。</li>
+      <li>未入金(Payment status = Pending)の請求書も、請求済みの売上として計上しています(主に委託販売の請求書)。</li>
+      <li>伝票数は注文単位。同じ注文番号が別の店舗・チャネルで再利用されている例があるため、注文番号+店舗+チャネル+日付で1件と数えます。</li>
+      <li>ブランドは商品コードの接頭辞で判定(VFF / CP・CC=Coolcore / TBO・KC=Tabio / OLN=Oleno など)。</li>
+    </ul>
+    <h3>出典</h3>
+    <p>${esc(d.source_file)}(受注システムの販売明細エクスポート)・集計 ${esc(d.generated_at)}</p>`,
+  en: d => `
+    <h3>What this dashboard shows</h3>
+    <p>Sales made by Endeavors Co., Ltd. (EDV) to its own customers (retail). The "対EDV" line in the Barefoot Inc. dashboard is Barefoot's <b>wholesale invoicing</b> to EDV and is a different number.</p>
+    <div class="warn">Overlap with the Barefoot dashboard: for 2026, the Barefoot dashboard no longer loads EDV's store, online, event or consignment files (they were replaced by "対EDV"). Retail sales at Central department-store counters (Chidlom etc.) are still counted there. "Central LP" here is the Coollabo counter (Central Ladprao 3F), a different counter from Barefoot's five department-store counters. How to treat the overlap will be decided after comparing both dashboards side by side.</div>
+    <h3>Channels (10)</h3>
+    ${mappingTable('en')}
+    <h3>Excluded</h3>
+    <ul>
+      <li>EDV → Barefoot Inc. invoices (intra-group): service charges (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB and goods <b>${fmt(d.excluded.interco_goods || 0)}</b> THB (ex-VAT)</li>
+      <li>Non-product lines (asset sale etc.) ${fmt(d.excluded.non_product || 0)} THB</li>
+      <li>Voided orders</li>
+    </ul>
+    <h3>Rules</h3>
+    <ul>
+      <li>Each order's "Amount" (the billed total after order-level discounts) is split across its product lines by line value. Totals are summed VAT-inclusive and divided by 1.07 once at the end.</li>
+      <li>Unpaid invoices (Payment status = Pending, mostly consignment invoices) are counted as sales.</li>
+      <li>Orders are counted per order number + branch + channel + date, because some order numbers are reused across branches.</li>
+      <li>Brand is taken from the product-code prefix (VFF / CP, CC = Coolcore / TBO, KC = Tabio / OLN = Oleno, …).</li>
+    </ul>
+    <h3>Source</h3>
+    <p>${esc(d.source_file)} (order-system sales detail export) · built ${esc(d.generated_at)}</p>`,
+  th: d => `
+    <h3>แดชบอร์ดนี้แสดงอะไร</h3>
+    <p>ยอดขายที่บริษัท เอ็นเดเวอร์ซ จำกัด (EDV) ขายให้ลูกค้าของตนเอง (ค้าปลีก) ส่วน "対EDV" ในแดชบอร์ดของ Barefoot Inc. คือ<b>ยอดขายส่ง</b>ที่ Barefoot เรียกเก็บจาก EDV ซึ่งเป็นตัวเลขคนละตัวกัน</p>
+    <div class="warn">ส่วนที่ซ้ำกับแดชบอร์ด Barefoot: ข้อมูลปี 2026 ฝั่ง Barefoot ไม่ได้นำไฟล์หน้าร้าน ออนไลน์ อีเวนต์ และฝากขายของ EDV มาใช้แล้ว (เปลี่ยนเป็น "対EDV") แต่ยอดขายปลีกของเคาน์เตอร์ในห้าง Central (Chidlom ฯลฯ) ยังนับอยู่ฝั่ง Barefoot ส่วน "Central LP" ในแดชบอร์ดนี้คือเคาน์เตอร์ Coollabo (Central ลาดพร้าว ชั้น 3) ซึ่งเป็นคนละเคาน์เตอร์กับ 5 เคาน์เตอร์ในห้างของ Barefoot วิธีจัดการส่วนที่ซ้ำจะตัดสินใจหลังจากเทียบทั้งสองแดชบอร์ด</div>
+    <h3>ช่องทาง (10 ช่องทาง)</h3>
+    ${mappingTable('th')}
+    <h3>รายการที่ไม่นับรวม</h3>
+    <ul>
+      <li>ใบแจ้งหนี้จาก EDV ถึง Barefoot Inc. (รายการภายในกลุ่ม): ค่าบริการ (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> บาท และสินค้า <b>${fmt(d.excluded.interco_goods || 0)}</b> บาท (ไม่รวม VAT)</li>
+      <li>รายการที่ไม่ใช่สินค้า (เช่น ขายสินทรัพย์) ${fmt(d.excluded.non_product || 0)} บาท</li>
+      <li>คำสั่งซื้อที่ถูกยกเลิก (Voided)</li>
+    </ul>
+    <h3>หลักการคำนวณ</h3>
+    <ul>
+      <li>ใช้ "Amount" ของแต่ละคำสั่งซื้อ (ยอดเรียกเก็บจริงหลังส่วนลดระดับบิล) แล้วกระจายไปยังสินค้าแต่ละรายการตามสัดส่วนมูลค่า รวมยอดแบบรวม VAT แล้วหารด้วย 1.07 ครั้งเดียวตอนท้าย</li>
+      <li>ใบแจ้งหนี้ที่ยังไม่ชำระ (Payment status = Pending ส่วนใหญ่เป็นฝากขาย) นับเป็นยอดขาย</li>
+      <li>นับบิลตาม เลขที่คำสั่งซื้อ + สาขา + ช่องทาง + วันที่ เพราะมีเลขที่ซ้ำกันข้ามสาขา</li>
+      <li>แบรนด์ดูจากรหัสสินค้า (VFF / CP, CC = Coolcore / TBO, KC = Tabio / OLN = Oleno ฯลฯ)</li>
+    </ul>
+    <h3>ที่มา</h3>
+    <p>${esc(d.source_file)} (ไฟล์ส่งออกรายละเอียดการขายจากระบบคำสั่งซื้อ) · ประมวลผล ${esc(d.generated_at)}</p>`,
+};
+const MAPPING = [
+  ['K village', 'store', { ja:'倉庫 Kvillage', en:'Branch "Kvillage"', th:'สาขา Kvillage' }],
+  ['Thaniya', 'store', { ja:'倉庫 Thaniya', en:'Branch "Thaniya"', th:'สาขา Thaniya' }],
+  ['Central LP', 'store', { ja:'倉庫 Coollabo Cen LP 3F', en:'Branch "Coollabo Cen LP 3F"', th:'สาขา Coollabo Cen LP 3F' }],
+  ['Cart LP', 'store', { ja:'倉庫 CART Central LP', en:'Branch "CART Central LP"', th:'สาขา CART Central LP' }],
+  ['Online', 'online', { ja:'販売チャネル Facebook / LINE、本社倉庫からの直販', en:'Sales channel Facebook / LINE, and direct orders from the main warehouse', th:'ช่องทาง Facebook / LINE และขายตรงจากคลังหลัก' }],
+  ['Shopee', 'online', { ja:'販売チャネル Shopee', en:'Sales channel Shopee', th:'ช่องทาง Shopee' }],
+  ['Lazada', 'online', { ja:'販売チャネル Lazada', en:'Sales channel Lazada', th:'ช่องทาง Lazada' }],
+  ['Event', 'event', { ja:'倉庫 Event 1 / Event 2', en:'Branches "Event 1" / "Event 2"', th:'สาขา Event 1 / Event 2' }],
+  ['Consignment', 'consignment', { ja:'委託先への請求書(Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)', en:'Invoices to consignment partners (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)', th:'ใบแจ้งหนี้ถึงร้านฝากขาย (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)' }],
+  ['Other', 'other', { ja:'本社倉庫から法人・個人への請求書(生地の販売など)', en:'Main-warehouse invoices to companies/individuals (e.g. fabric sale)', th:'ใบแจ้งหนี้จากคลังหลักถึงนิติบุคคล/บุคคล (เช่น ขายผ้า)' }],
+];
+function mappingTable(l) {
+  return `<div class="tbl-scroll"><table><thead><tr><th>${I18N[l].col_channel}</th><th>${I18N[l].col_group}</th><th style="text-align:left">${l === 'ja' ? '元データの条件' : l === 'en' ? 'Rule in source data' : 'เงื่อนไขในข้อมูลต้นทาง'}</th></tr></thead><tbody>` +
+    MAPPING.map(([c, g, d]) => `<tr><td><span class="name-cell">${sw(GCOLOR(g))}${esc(I18N[l]['ch_' + c] || c)}</span></td><td>${esc(I18N[l]['g_' + g])}</td><td style="text-align:left">${esc(d[l])}</td></tr>`).join('') +
+    '</tbody></table></div>';
+}
+
+/* ------------------------------------------------------------------ wiring */
+function renderAll() {
+  document.documentElement.lang = LANG;
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === LANG));
+  document.getElementById('periodLine').innerHTML =
+    `${t('period_label')}: <b>${M[0].slice(0, 4)} ${esc(mName(M[0]))} – ${esc(mName(M[M.length - 1]))}</b> · ${t('updated')}: ${esc(DATA.generated_at)} · ${t('source')}: ${esc(DATA.source_file)}`;
+  const ps = periods();
+  ['kpiPeriod', 'sharePeriod', 'chtPeriod', 'chdPeriod', 'brPeriod', 'mdPeriod'].forEach(id => fillSelect(id, ps, S[id]));
+  fillSelect('chdChannel', CH.map(c => ({ id: c, label: chName(c) })), S.chdChannel);
+  fillSelect('brChannel', [{ id: 'all', label: t('all_channels') }, ...CH.map(c => ({ id: c, label: chName(c) }))], S.brChannel);
+  fillSelect('mdBrand', [{ id: 'all', label: t('all_brands') }, ...DATA.brands.map(b => ({ id: b, label: bName(b) }))], S.mdBrand);
+  renderKpis(); renderMonthly(); renderShare(); renderChTable(); renderChDetail(); renderBrand(); renderModels();
+  document.getElementById('about').innerHTML = ABOUT[LANG](DATA);
+}
+
+bindSelect('kpiPeriod', 'kpiPeriod', renderKpis);
+bindSeg('monthlyMetric', 'monthlyMetric', renderMonthly);
+document.getElementById('monthlyDetailBtn').addEventListener('click', () => { S.monthlyDetail = !S.monthlyDetail; renderMonthly(); });
+bindSelect('sharePeriod', 'sharePeriod', renderShare);
+bindSeg('shareMetric', 'shareMetric', renderShare);
+bindSelect('chtPeriod', 'chtPeriod', renderChTable);
+bindSelect('chdChannel', 'chdChannel', renderChDetail);
+bindSelect('chdPeriod', 'chdPeriod', renderChDetail);
+bindSelect('brChannel', 'brChannel', renderBrand);
+bindSelect('brPeriod', 'brPeriod', renderBrand);
+bindSeg('brMetric', 'brMetric', renderBrand);
+bindSelect('mdBrand', 'mdBrand', () => { S.mdShowAll = false; renderModels(); });
+bindSelect('mdPeriod', 'mdPeriod', renderModels);
+bindSeg('mdMetric', 'mdMetric', renderModels);
+document.getElementById('mdMore').addEventListener('click', () => { S.mdShowAll = !S.mdShowAll; renderModels(); });
+
+document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', () => {
+  LANG = b.dataset.lang;
+  try { localStorage.setItem('edv_lang', LANG); } catch (e) {}
+  renderAll();
+}));
+const redrawCharts = () => document.querySelectorAll('.tab.active .chart').forEach(el => el._redraw && el._redraw());
+document.querySelectorAll('nav.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.id === 'tab-' + b.dataset.tab));
+  hideTip();
+  redrawCharts(); // charts in a hidden tab were drawn at width 0
+}));
+let resizeTimer;
+addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(redrawCharts, 150); });
+
+renderAll();
+// deep link: dashboard.html#products opens that tab
+const hashTab = document.querySelector(`nav.tabs button[data-tab="${location.hash.slice(1)}"]`);
+if (hashTab) hashTab.click();
+</script>
+</body>
+</html>
