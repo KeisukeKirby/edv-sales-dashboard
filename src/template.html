@@ -85,6 +85,7 @@ select{cursor:pointer;max-width:100%;}
 .vlegend .pct{font-family:var(--mono);color:var(--ink);}
 .donut-wrap{display:grid;grid-template-columns:minmax(160px,220px) 1fr;gap:18px;align-items:center;}
 section.card > .donut-wrap{grid-template-columns:minmax(160px,240px) minmax(0,420px);}
+section.card > .donut-wrap.share-wrap{grid-template-columns:minmax(160px,220px) minmax(0,1fr);}
 .sw{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;}
 .axis text{fill:var(--ink-faint);font-size:11px;font-family:var(--mono);}
 .axis line.grid{stroke:var(--line);stroke-width:1;}
@@ -173,8 +174,6 @@ th .arrow{color:var(--accent);}
         <div class="controls"><select id="kpiPeriod"></select></div>
       </div>
       <div class="kpis" id="kpis"></div>
-      <h3 class="sub" style="margin-top:20px" data-i18n="s_share"></h3>
-      <div class="tbl-scroll" id="shareTable"></div>
       <div class="btn-row"><button class="btn-more" id="sumDetailBtn"></button></div>
       <div class="detail tbl-scroll" id="sumDetail" hidden></div>
       <p class="note" data-i18n="note_exvat"></p>
@@ -291,7 +290,15 @@ th .arrow{color:var(--accent);}
 
     <section class="card">
       <div class="card-head">
-        <h2><span class="num">02</span><span data-i18n="s_pay"></span></h2>
+        <h2><span class="num">02</span><span data-i18n="s_share"></span></h2>
+        <div class="controls"><select id="sharePeriod"></select></div>
+      </div>
+      <div class="donut-wrap share-wrap"><div class="chart" id="shareDonut"></div><div class="tbl-scroll" id="shareTable"></div></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">03</span><span data-i18n="s_pay"></span></h2>
         <div class="controls"><select id="payChannel"></select><select id="payPeriod"></select></div>
       </div>
       <p class="note top" id="payNote"></p>
@@ -302,7 +309,7 @@ th .arrow{color:var(--accent);}
 
     <section class="card">
       <div class="card-head">
-        <h2><span class="num">03</span><span data-i18n="s_chdetail"></span></h2>
+        <h2><span class="num">04</span><span data-i18n="s_chdetail"></span></h2>
         <div class="controls"><select id="chdChannel"></select><select id="chdPeriod"></select></div>
       </div>
       <div class="note top" id="chdSummary"></div>
@@ -774,7 +781,7 @@ function vlegend(items) { // -> html rows with data-k
 
 /* ------------------------------------------------------------------ state + small UI helpers */
 const S = {
-  kpiPeriod: 'all',
+  kpiPeriod: 'all', sharePeriod: 'all',
   vffChPeriod: 'all', vffChMetric: 'pairs', vffGPeriod: 'all', vffMPeriod: 'all', vffCPeriod: 'all', vffSPeriod: 'all',
   chMonthlyMetric: 'amt', chtPeriod: 'all', chtSort: { key: 'amt', dir: -1 },
   payChannel: 'all', payPeriod: 'all', chdChannel: 'K village', chdPeriod: 'all',
@@ -836,9 +843,18 @@ function renderSummary() {
   donut($('kpiD1'), qtyI, tipFor(qtyI, t('unit_pcs')), 110);
   donut($('kpiD2'), ordI, tipFor(ordI, t('unit_orders')), 110);
 
-  // channel mix table (was its own section)
+  // monthly figures, same shape as the Barefoot dashboard: one row per metric, months across
+  detailToggle('sumDetailBtn', 'sumDetail', () => monthTable(t('col_item'), [
+    { label: t('k_total_amt'), key: 'amt' }, { label: t('k_total_qty'), key: 'qty' }, { label: t('k_total_orders'), key: 'ord' },
+  ], (k, ms2) => (k === 'amt' ? sumCh(CH, ms2)[0] : sumCh(PRODUCT_CH, ms2)[k === 'qty' ? 1 : 2]), { total: false }));
+}
+
+/* ================================================================== channel mix (channel tab) */
+function renderShare() {
+  const ms = periodMonths(S.sharePeriod);
   const rows = CH.map(c => { const v = chSum(c, ms); return { c, g: GROUP_OF[c], amt: v[0], qty: v[1], ord: v[2] }; });
-  const T0 = tot(0), svc = g => g === 'service';
+  const T0 = rows.reduce((s, r) => s + r.amt, 0), svc = g => g === 'service';
+  const p = sumCh(PRODUCT_CH, ms), ord = p[2], aov = ord ? p[0] / ord : 0;
   let h = `<table><thead><tr><th>${t('col_channel')}</th><th>${t('col_amount')}</th><th>${t('col_share')}</th><th>${t('col_qty')}</th><th>${t('col_orders')}</th><th>${t('col_aov')}</th></tr></thead><tbody>`;
   const cells = (amt, qty, ord, g) => `<td>${fmt(amt)}</td><td>${pct(amt, T0)}</td><td>${svc(g) ? '–' : fmt(qty)}</td><td>${svc(g) ? '–' : fmt(ord)}</td><td>${svc(g) || !ord ? '–' : fmt(amt / ord)}</td>`;
   GROUPS.forEach(g => {
@@ -846,17 +862,10 @@ function renderSummary() {
     h += `<tr data-k="${g}"><td><span class="name-cell">${sw(GCOLOR(g))}<b>${esc(gName(g))}</b></span></td>${cells(s[0], s[1], s[2], g).replace(/<td>/g, '<td><b>').replace(/<\/td>/g, '</b></td>')}</tr>`;
     if (gr.length > 1) gr.forEach(r => { h += `<tr class="sub" data-k="${g}"><td style="padding-left:28px">${esc(chName(r.c))}</td>${cells(r.amt, r.qty, r.ord, g)}</tr>`; });
   });
-  h += `<tr class="total"><td>${t('total')}</td><td>${fmt(T0)}</td><td>100%</td><td>${fmt(ptot(1))}</td><td>${fmt(ord)}</td><td>${fmt(aov)}</td></tr></tbody></table>`;
+  h += `<tr class="total"><td>${t('total')}</td><td>${fmt(T0)}</td><td>100%</td><td>${fmt(p[1])}</td><td>${fmt(ord)}</td><td>${fmt(aov)}</td></tr></tbody></table>`;
   $('shareTable').innerHTML = h;
-  $('shareTable').querySelectorAll('tr[data-k]').forEach(tr => {
-    tr.addEventListener('mouseenter', () => linkHighlight($('kpiD0'), $('shareTable'), tr.dataset.k));
-    tr.addEventListener('mouseleave', () => linkHighlight($('kpiD0'), $('shareTable'), null));
-  });
-
-  // monthly figures, same shape as the Barefoot dashboard: one row per metric, months across
-  detailToggle('sumDetailBtn', 'sumDetail', () => monthTable(t('col_item'), [
-    { label: t('k_total_amt'), key: 'amt' }, { label: t('k_total_qty'), key: 'qty' }, { label: t('k_total_orders'), key: 'ord' },
-  ], (k, ms2) => (k === 'amt' ? sumCh(CH, ms2)[0] : sumCh(PRODUCT_CH, ms2)[k === 'qty' ? 1 : 2]), { total: false }));
+  const items = GROUPS.map(g => ({ key: g, label: gName(g), color: GCOLOR(g), value: rows.filter(r => r.g === g).reduce((s, r) => s + r.amt, 0) }));
+  donutLinked($('shareDonut'), $('shareTable'), items, v => fmt(v) + ' ' + t('unit_thb'));
 }
 
 function groupSeries(idx, splitGroups) { // stacked series by group; split groups get one same-colored series per channel
@@ -1200,7 +1209,7 @@ const ABOUT_EXTRA = {
 
 /* ------------------------------------------------------------------ wiring */
 const RENDERERS = [renderSummary, renderMonthly, renderVffStore, renderVffChannel, renderVffGender, renderVffModels, renderVffColors, renderVffSizes,
-  renderChMonthly, renderPay, renderChDetail, renderBrand, renderChannelBrand, renderRanking, renderBrandDetail, renderVSoul];
+  renderChMonthly, renderShare, renderPay, renderChDetail, renderBrand, renderChannelBrand, renderRanking, renderBrandDetail, renderVSoul];
 function renderAll() {
   document.documentElement.lang = LANG;
   document.title = t('title');
@@ -1209,7 +1218,7 @@ function renderAll() {
   $('periodLine').innerHTML =
     `${t('period_label')}: <b>${M[0].slice(0, 4)} ${esc(mName(M[0]))} – ${esc(mName(M[M.length - 1]))}</b> · ${t('updated')}: ${esc(DATA.generated_at)} · ${t('source')}: ${esc(DATA.source_file)}`;
   const ps = periods();
-  ['kpiPeriod', 'vffChPeriod', 'vffGPeriod', 'vffMPeriod', 'vffCPeriod', 'vffSPeriod', 'chtPeriod', 'payPeriod', 'chdPeriod', 'brPeriod', 'cbPeriod', 'rkPeriod', 'bdPeriod']
+  ['kpiPeriod', 'sharePeriod', 'vffChPeriod', 'vffGPeriod', 'vffMPeriod', 'vffCPeriod', 'vffSPeriod', 'chtPeriod', 'payPeriod', 'chdPeriod', 'brPeriod', 'cbPeriod', 'rkPeriod', 'bdPeriod']
     .forEach(id => fillSelect(id, ps, S[id]));
   fillSelect('payChannel', [{ id: 'all', label: t('all_channels') }, ...PRODUCT_CH.filter(c => DATA.pay[c]).map(c => ({ id: c, label: chName(c) }))], S.payChannel);
   fillSelect('chdChannel', CH.map(c => ({ id: c, label: chName(c) })), S.chdChannel);
@@ -1239,6 +1248,7 @@ bindSeg('chMonthlyMetric', 'chMonthlyMetric', renderChMonthly);
 bindToggle('chDetailBtn', renderChMonthly);
 bindToggle('chQtyBtn', renderChMonthly);
 bindSelect('chtPeriod', 'chtPeriod', renderChTable);
+bindSelect('sharePeriod', 'sharePeriod', renderShare);
 bindSelect('payChannel', 'payChannel', renderPay);
 bindSelect('payPeriod', 'payPeriod', renderPay);
 bindToggle('payBtn', renderPay);
