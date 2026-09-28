@@ -20,7 +20,6 @@
   --g-online:#d95926;
   --g-event:#199e70;
   --g-consignment:#c98500;
-  --g-other:#9085e9;
   --other-gray:#7E9587;
   --sans:"Noto Sans JP","Noto Sans Thai",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic","Leelawadee UI",sans-serif;
   --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Roboto Mono",monospace;
@@ -285,8 +284,8 @@ const I18N = {
     note_model:'モデル名は商品名の「(」より前を使用(色・サイズ違いを統合)。',
     period_label:'対象期間', updated:'データ更新', source:'出典',
     p_all:'累計', p_h1:'上期(1〜6月)', p_q1:'Q1(1〜3月)', p_q2:'Q2(4〜6月)', p_q3:'Q3',
-    g_store:'実店舗', g_online:'オンライン', g_event:'イベント', g_consignment:'委託販売', g_other:'その他',
-    ch_Online:'Online(SNS・直販)', ch_Consignment:'委託販売', ch_Event:'イベント', ch_Other:'その他(法人販売)',
+    g_store:'実店舗', g_online:'オンライン', g_event:'イベント', g_consignment:'委託・法人',
+    ch_Online:'Online(SNS・直販)', 'ch_Consignment Other':'Consignment Other(委託・法人)', ch_Event:'イベント',
     b_Others:'その他',
     no_data:'この期間のデータはありません',
   },
@@ -311,8 +310,8 @@ const I18N = {
     note_model:'Model = product name before "(" (colors and sizes merged).',
     period_label:'Period', updated:'Data updated', source:'Source',
     p_all:'YTD', p_h1:'H1 (Jan–Jun)', p_q1:'Q1 (Jan–Mar)', p_q2:'Q2 (Apr–Jun)', p_q3:'Q3',
-    g_store:'Stores', g_online:'Online', g_event:'Events', g_consignment:'Consignment', g_other:'Other',
-    ch_Online:'Online (social/direct)', ch_Consignment:'Consignment', ch_Event:'Event', ch_Other:'Other (B2B)',
+    g_store:'Stores', g_online:'Online', g_event:'Events', g_consignment:'Consignment/B2B',
+    ch_Online:'Online (social/direct)', 'ch_Consignment Other':'Consignment Other (consignment/B2B)', ch_Event:'Event',
     b_Others:'Others',
     no_data:'No data for this period',
   },
@@ -337,8 +336,8 @@ const I18N = {
     note_model:'ชื่อรุ่น = ชื่อสินค้าก่อนเครื่องหมาย "(" (รวมสีและไซซ์)',
     period_label:'ช่วงเวลา', updated:'อัปเดตข้อมูล', source:'ที่มา',
     p_all:'สะสม', p_h1:'ครึ่งปีแรก (ม.ค.–มิ.ย.)', p_q1:'Q1 (ม.ค.–มี.ค.)', p_q2:'Q2 (เม.ย.–มิ.ย.)', p_q3:'Q3',
-    g_store:'หน้าร้าน', g_online:'ออนไลน์', g_event:'อีเวนต์', g_consignment:'ฝากขาย', g_other:'อื่นๆ',
-    ch_Online:'ออนไลน์ (โซเชียล/ขายตรง)', ch_Consignment:'ฝากขาย', ch_Event:'อีเวนต์', ch_Other:'อื่นๆ (ขายนิติบุคคล)',
+    g_store:'หน้าร้าน', g_online:'ออนไลน์', g_event:'อีเวนต์', g_consignment:'ฝากขาย/นิติบุคคล',
+    ch_Online:'ออนไลน์ (โซเชียล/ขายตรง)', 'ch_Consignment Other':'Consignment Other (ฝากขาย/นิติบุคคล)', ch_Event:'อีเวนต์',
     b_Others:'อื่นๆ',
     no_data:'ไม่มีข้อมูลในช่วงเวลานี้',
   },
@@ -682,13 +681,17 @@ const ABOUT = {
     <h3>このダッシュボードが示すもの</h3>
     <p>Endeavors社(EDV)自身が顧客に販売した実績(小売)です。Barefoot Inc. の販売実績ダッシュボードにある「対EDV」は Barefoot から EDV への<b>卸請求額</b>で、ここで扱う数字とは別物です。</p>
     <div class="warn">Barefoot側ダッシュボードとの重複: 2026年分のBarefoot側では、EDVの店舗・オンライン・イベント・委託の生データは読み込まれていません(「対EDV」に置換済み)。ただし Central 百貨店内の売場(Chidlom 等)の小売売上は Barefoot 側に計上されています。本ダッシュボードの「Central LP」は Coollabo(Central Ladprao 3F)の売場で、Barefoot 側の百貨店5店舗とは別の売場です。重複の扱いは両ダッシュボードを並べて確認したうえで決定します。</div>
-    <h3>チャネル区分(10区分)</h3>
+    <h3>チャネル区分(9区分)</h3>
     ${mappingTable('ja')}
     <h3>計上から除外したもの</h3>
     <ul>
-      <li>EDV → Barefoot Inc. への請求(グループ内取引): サービス料(Marketing/Marketing Ads/Car rent/Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB、商品 <b>${fmt(d.excluded.interco_goods || 0)}</b> THB(いずれも税抜)</li>
-      <li>商品以外の行(資産売却など) ${fmt(d.excluded.non_product || 0)} THB</li>
+      <li>EDV → Barefoot Inc. へのサービス料請求(Marketing/Marketing Ads/Car rent/Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB(税抜)</li>
       <li>Status が Voided の注文</li>
+    </ul>
+    <h3>判断を要したが計上しているもの</h3>
+    <ul>
+      <li>Barefoot Inc. への商品請求(Central CL など) ${fmt(d.included.bft_goods || 0)} THB → Consignment Other</li>
+      <li>資産売却収入 ${fmt(d.included.asset_sale || 0)} THB → Online</li>
     </ul>
     <h3>集計ルール</h3>
     <ul>
@@ -703,13 +706,17 @@ const ABOUT = {
     <h3>What this dashboard shows</h3>
     <p>Sales made by Endeavors Co., Ltd. (EDV) to its own customers (retail). The "対EDV" line in the Barefoot Inc. dashboard is Barefoot's <b>wholesale invoicing</b> to EDV and is a different number.</p>
     <div class="warn">Overlap with the Barefoot dashboard: for 2026, the Barefoot dashboard no longer loads EDV's store, online, event or consignment files (they were replaced by "対EDV"). Retail sales at Central department-store counters (Chidlom etc.) are still counted there. "Central LP" here is the Coollabo counter (Central Ladprao 3F), a different counter from Barefoot's five department-store counters. How to treat the overlap will be decided after comparing both dashboards side by side.</div>
-    <h3>Channels (10)</h3>
+    <h3>Channels (9)</h3>
     ${mappingTable('en')}
     <h3>Excluded</h3>
     <ul>
-      <li>EDV → Barefoot Inc. invoices (intra-group): service charges (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB and goods <b>${fmt(d.excluded.interco_goods || 0)}</b> THB (ex-VAT)</li>
-      <li>Non-product lines (asset sale etc.) ${fmt(d.excluded.non_product || 0)} THB</li>
+      <li>EDV → Barefoot Inc. service invoices (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB (ex-VAT)</li>
       <li>Voided orders</li>
+    </ul>
+    <h3>Judgement calls, counted as sales</h3>
+    <ul>
+      <li>Goods invoiced to Barefoot Inc. (Central CL etc.) ${fmt(d.included.bft_goods || 0)} THB → Consignment Other</li>
+      <li>Asset-sale income ${fmt(d.included.asset_sale || 0)} THB → Online</li>
     </ul>
     <h3>Rules</h3>
     <ul>
@@ -724,13 +731,17 @@ const ABOUT = {
     <h3>แดชบอร์ดนี้แสดงอะไร</h3>
     <p>ยอดขายที่บริษัท เอ็นเดเวอร์ซ จำกัด (EDV) ขายให้ลูกค้าของตนเอง (ค้าปลีก) ส่วน "対EDV" ในแดชบอร์ดของ Barefoot Inc. คือ<b>ยอดขายส่ง</b>ที่ Barefoot เรียกเก็บจาก EDV ซึ่งเป็นตัวเลขคนละตัวกัน</p>
     <div class="warn">ส่วนที่ซ้ำกับแดชบอร์ด Barefoot: ข้อมูลปี 2026 ฝั่ง Barefoot ไม่ได้นำไฟล์หน้าร้าน ออนไลน์ อีเวนต์ และฝากขายของ EDV มาใช้แล้ว (เปลี่ยนเป็น "対EDV") แต่ยอดขายปลีกของเคาน์เตอร์ในห้าง Central (Chidlom ฯลฯ) ยังนับอยู่ฝั่ง Barefoot ส่วน "Central LP" ในแดชบอร์ดนี้คือเคาน์เตอร์ Coollabo (Central ลาดพร้าว ชั้น 3) ซึ่งเป็นคนละเคาน์เตอร์กับ 5 เคาน์เตอร์ในห้างของ Barefoot วิธีจัดการส่วนที่ซ้ำจะตัดสินใจหลังจากเทียบทั้งสองแดชบอร์ด</div>
-    <h3>ช่องทาง (10 ช่องทาง)</h3>
+    <h3>ช่องทาง (9 ช่องทาง)</h3>
     ${mappingTable('th')}
     <h3>รายการที่ไม่นับรวม</h3>
     <ul>
-      <li>ใบแจ้งหนี้จาก EDV ถึง Barefoot Inc. (รายการภายในกลุ่ม): ค่าบริการ (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> บาท และสินค้า <b>${fmt(d.excluded.interco_goods || 0)}</b> บาท (ไม่รวม VAT)</li>
-      <li>รายการที่ไม่ใช่สินค้า (เช่น ขายสินทรัพย์) ${fmt(d.excluded.non_product || 0)} บาท</li>
+      <li>ใบแจ้งหนี้ค่าบริการจาก EDV ถึง Barefoot Inc. (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> บาท (ไม่รวม VAT)</li>
       <li>คำสั่งซื้อที่ถูกยกเลิก (Voided)</li>
+    </ul>
+    <h3>รายการที่ต้องพิจารณาแต่นับเป็นยอดขาย</h3>
+    <ul>
+      <li>สินค้าที่เรียกเก็บจาก Barefoot Inc. (Central CL ฯลฯ) ${fmt(d.included.bft_goods || 0)} บาท → Consignment Other</li>
+      <li>รายได้จากการขายสินทรัพย์ ${fmt(d.included.asset_sale || 0)} บาท → Online</li>
     </ul>
     <h3>หลักการคำนวณ</h3>
     <ul>
@@ -747,12 +758,11 @@ const MAPPING = [
   ['Thaniya', 'store', { ja:'倉庫 Thaniya', en:'Branch "Thaniya"', th:'สาขา Thaniya' }],
   ['Central LP', 'store', { ja:'倉庫 Coollabo Cen LP 3F', en:'Branch "Coollabo Cen LP 3F"', th:'สาขา Coollabo Cen LP 3F' }],
   ['Cart LP', 'store', { ja:'倉庫 CART Central LP', en:'Branch "CART Central LP"', th:'สาขา CART Central LP' }],
-  ['Online', 'online', { ja:'販売チャネル Facebook / LINE、本社倉庫からの直販', en:'Sales channel Facebook / LINE, and direct orders from the main warehouse', th:'ช่องทาง Facebook / LINE และขายตรงจากคลังหลัก' }],
+  ['Online', 'online', { ja:'販売チャネル Facebook / LINE、販売チャネル空欄の TX 注文(本社倉庫・店舗在庫からの発送)、資産売却収入', en:'Sales channel Facebook / LINE, TX orders with a blank sales channel (shipped from the main warehouse or store stock), asset-sale income', th:'ช่องทาง Facebook / LINE, คำสั่งซื้อ TX ที่ไม่ระบุช่องทาง (ส่งจากคลังหลักหรือสต็อกหน้าร้าน), รายได้จากการขายสินทรัพย์' }],
   ['Shopee', 'online', { ja:'販売チャネル Shopee', en:'Sales channel Shopee', th:'ช่องทาง Shopee' }],
   ['Lazada', 'online', { ja:'販売チャネル Lazada', en:'Sales channel Lazada', th:'ช่องทาง Lazada' }],
-  ['Event', 'event', { ja:'倉庫 Event 1 / Event 2', en:'Branches "Event 1" / "Event 2"', th:'สาขา Event 1 / Event 2' }],
-  ['Consignment', 'consignment', { ja:'委託先への請求書(Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)', en:'Invoices to consignment partners (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)', th:'ใบแจ้งหนี้ถึงร้านฝากขาย (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)' }],
-  ['Other', 'other', { ja:'本社倉庫から法人・個人への請求書(生地の販売など)', en:'Main-warehouse invoices to companies/individuals (e.g. fabric sale)', th:'ใบแจ้งหนี้จากคลังหลักถึงนิติบุคคล/บุคคล (เช่น ขายผ้า)' }],
+  ['Event', 'event', { ja:'倉庫 Event 1 / Event 2、Cart LP のレジで行ったイベント(レシート系列 RC-127、2026/5/21〜24)', en:'Branches "Event 1" / "Event 2", plus the event run on the Cart LP till (receipt series RC-127, 21–24 May 2026)', th:'สาขา Event 1 / Event 2 และอีเวนต์ที่ใช้เครื่อง Cart LP (ใบเสร็จชุด RC-127, 21–24 พ.ค. 2026)' }],
+  ['Consignment Other', 'consignment', { ja:'委託先への請求書(Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)、本社倉庫からの法人・個人への請求書(Barefoot Inc. への商品請求、生地の販売など)', en:'Invoices to consignment partners (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild) and main-warehouse invoices to companies/individuals (goods invoiced to Barefoot Inc., fabric sale, etc.)', th:'ใบแจ้งหนี้ถึงร้านฝากขาย (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild) และใบแจ้งหนี้จากคลังหลักถึงนิติบุคคล/บุคคล (สินค้าที่เรียกเก็บจาก Barefoot Inc., ขายผ้า ฯลฯ)' }],
 ];
 function mappingTable(l) {
   return `<div class="tbl-scroll"><table><thead><tr><th>${I18N[l].col_channel}</th><th>${I18N[l].col_group}</th><th style="text-align:left">${l === 'ja' ? '元データの条件' : l === 'en' ? 'Rule in source data' : 'เงื่อนไขในข้อมูลต้นทาง'}</th></tr></thead><tbody>` +

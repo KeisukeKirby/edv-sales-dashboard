@@ -16,9 +16,9 @@ VAT_RATE = 0.07
 CHANNELS = [  # display order; group = chart color family
     ('K village', 'store'), ('Thaniya', 'store'), ('Central LP', 'store'), ('Cart LP', 'store'),
     ('Online', 'online'), ('Shopee', 'online'), ('Lazada', 'online'),
-    ('Event', 'event'), ('Consignment', 'consignment'), ('Other', 'other'),
+    ('Event', 'event'), ('Consignment Other', 'consignment'),
 ]
-GROUPS = ['store', 'online', 'event', 'consignment', 'other']
+GROUPS = ['store', 'online', 'event', 'consignment']
 
 
 def ser(v_vat_incl):
@@ -58,6 +58,7 @@ def main():
                      for c, mm in ch_brand.items()},
         'model': {m: {k: [ser(v[0]), round(v[1])] for k, v in kk.items()} for m, kk in model.items()},
         'excluded': {k: ser(v) for k, v in src['meta']['excluded_vat_incl'].items()},
+        'included': {k: ser(v) for k, v in src['meta'].get('included_vat_incl', {}).items()},
     }
     OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
 

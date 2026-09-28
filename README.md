@@ -19,8 +19,11 @@ python scripts/build.py
 
 ## 集計ルール
 
-- チャネル10区分: K village / Thaniya / Central LP(Coollabo) / Cart LP / Online(Facebook・LINE・直販) / Shopee / Lazada / Event(Event 1・2) / Consignment(委託先への請求書) / Other(本社倉庫からの法人請求)。グラフは色の判別性のため5系統(実店舗・オンライン・イベント・委託販売・その他)で色分けし、10区分は表とツールチップで表示
-- 除外: EDV→Barefoot Inc. への請求(サービス料・商品のグループ内取引)、商品以外の行、Voided
+- チャネル9区分(EDV の収入表と同じ列): K village / Thaniya / Central LP(Coollabo) / Cart LP / Online / Shopee / Lazada / Event / Consignment Other。グラフは色の判別性のため4系統(実店舗・オンライン・イベント・委託・法人)で色分けし、9区分は表とツールチップで表示
+  - Online: Facebook・LINE、販売チャネル空欄の TX 注文(店舗在庫から発送した分を含む)、資産売却収入
+  - Event: Event 1・2 に加え、Cart LP のレジで行ったイベント(RC-127、2026/5/21〜24 と同期間の RV)
+  - Consignment Other: 委託先への請求書+本社倉庫からの法人・個人請求(Barefoot Inc. への商品請求、生地販売を含む)
+- 除外: EDV→Barefoot Inc. へのサービス料請求(Marketing / Marketing Ads / Car rent / Sales Commission)、Voided
 - 金額は注文の `Amount`(注文単位値引き後の実請求額)を明細行の金額比で按分。VAT 7% は `aggregate.py` の `ser()` で1回だけ除算
 - 注文番号は店舗間で重複することがあるため、注文番号+倉庫+チャネル+日付で1伝票
 - 検算: 計上分+除外分 = 元ファイルの `Amount` 合計(Voided除く)と一致すること

@@ -5,13 +5,18 @@ data/records.json -- one record per product line, VAT-inclusive amounts.
 
 Scope (agreed with Keisuke 2026-09-26): EDV's OWN sales to its customers.
 Excluded on purpose:
-  * EDV -> Barefoot Inc. (Thailand) invoices. These are inter-company: service
-    charges (Marketing / Marketing Ads / Car rent / Sales Commission) plus a few
-    goods transfers for Central counters. Counting them would mix group-internal
-    billing into retail performance. Totals are still reported in the
-    'excluded' block so they can be reconciled.
-  * Non-product lines (MKT/CMS/CCR service codes, P = asset sale).
+  * EDV -> Barefoot Inc. (Thailand) SERVICE invoices (Marketing / Marketing Ads /
+    Car rent / Sales Commission -- codes MKT/CMS/CCR). Totals are still reported
+    in the 'excluded' block so they can be reconciled.
   * Voided orders.
+
+Channel rules aligned with EDV's own income sheet (Keisuke, 2026-09-28):
+  * Goods invoiced to Barefoot Inc. (Central CL etc.) count as 'Consignment Other'.
+  * Asset-sale income (code P) counts, as Online (it is a main-warehouse TX order).
+  * TX orders with a blank sales channel are Online even when shipped from a
+    store warehouse (Thaniya / Kvillage stock).
+  * Receipt series RC-127 on the CART Central LP till (21-24 May 2026) was an
+    event, as was the Cart RV receipt in the same window -> Event.
 """
 import json
 import re
@@ -28,7 +33,10 @@ SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_SRC
 OUT = ROOT / 'data' / 'records.json'
 
 BFT_CUSTOMER_MARK = 'แบร์ฟุต'  # "บริษัท แบร์ฟุตอิงค์ (ไทยแลนด์) จำกัด"
-NON_PRODUCT_PREFIX = {'MKT', 'CMS', 'CCR', 'P'}
+SERVICE_PREFIX = {'MKT', 'CMS', 'CCR'}  # EDV -> BFT service fees, never sales
+ASSET_SALE_PREFIX = 'P'
+CART_EVENT_SERIES = 'R# RC-127-'
+CART_EVENT_DAYS = (date(2026, 5, 21), date(2026, 5, 24))
 
 # Consignment partners appear as their own Warehouse/Branch on IV invoices.
 CONSIGNMENT_WAREHOUSES = {'Banana Run', 'Avarin', 'Runnercart', 'EastWest', 'Highlandner',
@@ -75,21 +83,26 @@ def model_from_name(name):
     return str(name).split('(')[0].strip() if name else 'Other'
 
 
-def classify_channel(wh, ch, order_no):
-    """Map one order to the 10 reporting channels, or None if unmapped."""
+def classify_channel(wh, ch, order_no, d):
+    """Map one order to the 9 reporting channels."""
+    order_no = str(order_no)
     if ch in ONLINE_CHANNELS:
         return ONLINE_CHANNELS[ch]
+    if not ch and order_no.startswith('TX'):
+        return 'Online'  # online order fulfilled from whichever warehouse had stock
+    if wh == 'CART Central LP' and (order_no.startswith(CART_EVENT_SERIES) or
+                                    (order_no.startswith('RV') and CART_EVENT_DAYS[0] <= d <= CART_EVENT_DAYS[1])):
+        return 'Event'
     if wh in STORE_WAREHOUSES:
         return STORE_WAREHOUSES[wh]
     if wh in CONSIGNMENT_WAREHOUSES:
-        return 'Consignment'
+        return 'Consignment Other'
     if wh == 'คลังสินค้าหลัก':  # main warehouse
-        # IV = B2B invoice to a company (not a consignment partner) -> Other;
-        # anything else from the main warehouse is a direct online order.
-        return 'Other' if str(order_no).startswith('IV') else 'Online'
+        # IV = B2B invoice (companies, Barefoot Inc. goods) -> Consignment Other
+        return 'Consignment Other' if order_no.startswith('IV') else 'Online'
     if not wh and ch:
         return 'Online'
-    return 'Other'
+    return 'Consignment Other'
 
 
 def main():
@@ -122,6 +135,7 @@ def main():
 
     records = []
     stats = defaultdict(float)
+    included = defaultdict(float)  # judgement-call lines counted as sales, shown on the About tab
     for okey, o in orders.items():
         order_no = okey[0]
         order_key = '|'.join(str(x or '') for x in okey)
@@ -138,15 +152,18 @@ def main():
             pc = g(r, 'Product code')
             prefix = code_prefix(pc)
             line_amt = num(g(r, 'Total amount')) * ratio
-            if BFT_CUSTOMER_MARK in cust:
-                excluded['interco_service' if prefix in NON_PRODUCT_PREFIX else 'interco_goods'] += line_amt
+            if prefix in SERVICE_PREFIX:
+                excluded['interco_service' if BFT_CUSTOMER_MARK in cust else 'service_other'] += line_amt
                 continue
-            if prefix in NON_PRODUCT_PREFIX:
-                excluded['non_product'] += line_amt
-                continue
-            channel = classify_channel(g(r, 'Warehouse/Branch'), g(r, 'Sales channel'), order_no)
-            brand = BRAND_PREFIX.get(prefix, 'Others')
             d = parse_dmy(g(r, 'Date'))
+            channel = classify_channel(g(r, 'Warehouse/Branch'), g(r, 'Sales channel'), order_no, d)
+            brand = BRAND_PREFIX.get(prefix, 'Others')
+            model = model_from_name(g(r, 'Product name'))
+            if prefix == ASSET_SALE_PREFIX and re.fullmatch(r'P\d+', str(pc)):
+                model = 'Asset sale'
+                included['asset_sale'] += line_amt
+            if BFT_CUSTOMER_MARK in cust:
+                included['bft_goods'] += line_amt
             records.append({
                 'date': d.isoformat(),
                 'month': d.strftime('%Y-%m'),
@@ -155,7 +172,7 @@ def main():
                 'order_id': order_no,
                 'order_key': order_key,
                 'brand': brand,
-                'model': model_from_name(g(r, 'Product name')),
+                'model': model,
                 'code': pc,
                 'category': g(r, 'Category') or '',
                 'qty': num(g(r, 'Quantity')),
@@ -169,6 +186,7 @@ def main():
     meta = {
         'source_file': SRC.name,
         'excluded_vat_incl': {k: round(v, 2) for k, v in excluded.items()},
+        'included_vat_incl': {k: round(v, 2) for k, v in included.items()},
         'kept_line_total_vat_incl': round(stats['kept_line_total'], 2),
         'kept_billed_vat_incl': round(stats['kept_billed'], 2),
     }
