@@ -45,6 +45,17 @@ def main():
         k = model[m][r['brand'] + '\t' + r['model']]; k[0] += a; k[1] += q
         brand_total[r['brand']] += a
 
+    # VFF shoes: one row per month x channel x model x gender x size x color -> [pairs, amount]
+    vff = defaultdict(lambda: [0.0, 0.0])
+    for r in recs:
+        if r.get('vff_shoe'):
+            k = (r['month'], r['channel'], r['model'], r['gender'], r['size'], r['color'])
+            vff[k][0] += r['qty']; vff[k][1] += r['amount_vat_incl']
+    # payment methods: channel -> month -> method -> amount
+    pay = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+    for p in src.get('payments', []):
+        pay[p['channel']][p['month']][p['method']] += p['amount_vat_incl']
+
     known = {c for c, _ in CHANNELS}
     unknown = set(ch) - known
     assert not unknown, f'unmapped channels: {unknown}'
@@ -61,6 +72,8 @@ def main():
         'ch_brand': {c: {m: {b: [ser(v[0]), round(v[1])] for b, v in bb.items()} for m, bb in mm.items()}
                      for c, mm in ch_brand.items()},
         'model': {m: {k: [ser(v[0]), round(v[1])] for k, v in kk.items()} for m, kk in model.items()},
+        'vff': [[*k, round(v[0]), ser(v[1])] for k, v in sorted(vff.items())],
+        'pay': {c: {m: {k: ser(v) for k, v in mm.items()} for m, mm in cm.items()} for c, cm in pay.items()},
         'excluded': {k: ser(v) for k, v in src['meta']['excluded_vat_incl'].items()},
         'included': {k: ser(v) for k, v in src['meta'].get('included_vat_incl', {}).items()},
     }

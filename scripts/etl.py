@@ -97,6 +97,41 @@ def model_from_name(name):
     return str(name).split('(')[0].strip() if name else 'Other'
 
 
+SIZE_TOKEN = re.compile(r'^([MWU]?)(\d+(?:\.\d+)?)$')
+
+
+def vff_shoe_attrs(name):
+    """'VFF V-Soul(W37, Nude)' -> ('W', '37', 'Nude'); None for non-shoes.
+
+    VFF footwear always carries a numeric size, optionally prefixed by a
+    gender letter (W/M/U); socks use letter sizes (S/M/L) and are skipped."""
+    m = re.search(r'\(([^()]*)\)\s*$', str(name or ''))
+    if not m:
+        return None
+    parts = [p.strip() for p in m.group(1).split(',')]
+    sm = SIZE_TOKEN.match(parts[0])
+    if not sm:
+        return None
+    color = ', '.join(parts[1:]) or '-'
+    color = re.sub(r'\s+', ' ', color.replace('.', '')).strip()  # 'Fig/A. Green' == 'Fig/A Green'
+    return sm.group(1) or 'U', sm.group(2), color
+
+
+def pay_method(raw):
+    """Collapse the register's payment labels into 5 groups.
+    KBANK / BBL are bank EDC terminals, i.e. card payments (inferred)."""
+    s = str(raw)
+    if 'บัตรเครดิต' in s or s in ('KBANK', 'BBL'):
+        return 'card'
+    if 'เงินโอน' in s or 'QR' in s:
+        return 'transfer'
+    if s == 'Cash':
+        return 'cash'
+    if s in ('Shopee', 'Lazada'):
+        return 'marketplace'
+    return 'other'
+
+
 def classify_channel(wh, ch, order_no, d):
     """Map one order to the 9 reporting channels."""
     order_no = str(order_no)
@@ -130,7 +165,7 @@ def main():
         return r[ix[k]]
 
     # order-level: summed product-line total, and the order's Amount (first line only)
-    orders = defaultdict(lambda: {'lines': [], 'line_total': 0.0, 'amount': None})
+    orders = defaultdict(lambda: {'lines': [], 'line_total': 0.0, 'amount': None, 'payments': []})
     excluded = defaultdict(float)
     for r in data:
         if g(r, 'Status') == 'Voided':
@@ -141,6 +176,8 @@ def main():
         amt = g(r, 'Amount')
         if amt not in (None, ''):
             o['amount'] = num(amt)
+        if g(r, 'Payment channel') not in (None, ''):
+            o['payments'].append((g(r, 'Payment channel'), num(g(r, 'Payment amount'))))
         if not g(r, 'Product code') and not g(r, 'Product name'):
             continue  # split-payment rows carry payment info only
         # (code-less lines with a name are real sales, e.g. a fabric B2B invoice)
@@ -148,6 +185,7 @@ def main():
         o['line_total'] += num(g(r, 'Total amount'))
 
     records = []
+    payments = []  # one row per recorded payment, attributed to the order's channel
     stats = defaultdict(float)
     included = defaultdict(float)  # judgement-call lines counted as sales, shown on the About tab
     for okey, o in orders.items():
@@ -184,6 +222,11 @@ def main():
                     included['asset_sale'] += line_amt
                 if BFT_CUSTOMER_MARK in cust:
                     included['bft_goods'] += line_amt
+            shoe = vff_shoe_attrs(g(r, 'Product name')) if prefix == 'VFF' else None
+            if r is first and prefix not in SERVICE_CHANNEL:
+                for raw, pay_amt in o['payments']:
+                    payments.append({'month': d.strftime('%Y-%m'), 'channel': channel,
+                                     'method': pay_method(raw), 'amount_vat_incl': pay_amt})
             records.append({
                 'date': d.isoformat(),
                 'month': d.strftime('%Y-%m'),
@@ -198,6 +241,10 @@ def main():
                 'qty': qty,
                 'amount_vat_incl': round(line_amt, 4),
                 'payment_status': g(r, 'Payment status'),
+                'vff_shoe': shoe is not None,
+                'gender': shoe[0] if shoe else None,
+                'size': shoe[1] if shoe else None,
+                'color': shoe[2] if shoe else None,
             })
             stats['kept_line_total'] += num(g(r, 'Total amount'))
             stats['kept_billed'] += line_amt
@@ -210,7 +257,8 @@ def main():
         'kept_line_total_vat_incl': round(stats['kept_line_total'], 2),
         'kept_billed_vat_incl': round(stats['kept_billed'], 2),
     }
-    OUT.write_text(json.dumps({'meta': meta, 'records': records}, ensure_ascii=False), encoding='utf-8')
+    OUT.write_text(json.dumps({'meta': meta, 'records': records, 'payments': payments}, ensure_ascii=False),
+                   encoding='utf-8')
 
     by_ch = defaultdict(float)
     for rec in records:
