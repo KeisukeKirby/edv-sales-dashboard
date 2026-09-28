@@ -686,11 +686,12 @@ const ABOUT = {
     <h3>計上から除外したもの</h3>
     <ul>
       <li>EDV → Barefoot Inc. へのサービス料請求(Marketing/Marketing Ads/Car rent/Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB(税抜)</li>
+      <li>EDV の収入表に計上されていない請求書(収入表を正とする): 7・8月の Barefoot Inc. への商品請求 ${fmt(d.excluded.bft_goods_jul_aug || 0)} THB、7月の法人向け生地販売 IV202607013 ${fmt(d.excluded.fabric_sale || 0)} THB、8/31 再発行の Tabio 請求書 IV202607012 ${fmt(d.excluded.tabio_reissue || 0)} THB</li>
       <li>Status が Voided の注文</li>
     </ul>
     <h3>判断を要したが計上しているもの</h3>
     <ul>
-      <li>Barefoot Inc. への商品請求(Central CL など) ${fmt(d.included.bft_goods || 0)} THB → Consignment Other</li>
+      <li>Barefoot Inc. への商品請求(1〜6月、Central CL など) ${fmt(d.included.bft_goods || 0)} THB → Consignment Other</li>
       <li>資産売却収入 ${fmt(d.included.asset_sale || 0)} THB → Online</li>
     </ul>
     <h3>集計ルール</h3>
@@ -711,11 +712,12 @@ const ABOUT = {
     <h3>Excluded</h3>
     <ul>
       <li>EDV → Barefoot Inc. service invoices (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB (ex-VAT)</li>
+      <li>Invoices not in EDV's income sheet (the sheet is the source of truth): goods invoiced to Barefoot Inc. in Jul–Aug ${fmt(d.excluded.bft_goods_jul_aug || 0)} THB, July fabric sale to a company IV202607013 ${fmt(d.excluded.fabric_sale || 0)} THB, Tabio invoice IV202607012 reissued on 31 Aug ${fmt(d.excluded.tabio_reissue || 0)} THB</li>
       <li>Voided orders</li>
     </ul>
     <h3>Judgement calls, counted as sales</h3>
     <ul>
-      <li>Goods invoiced to Barefoot Inc. (Central CL etc.) ${fmt(d.included.bft_goods || 0)} THB → Consignment Other</li>
+      <li>Goods invoiced to Barefoot Inc. (Jan–Jun, Central CL etc.) ${fmt(d.included.bft_goods || 0)} THB → Consignment Other</li>
       <li>Asset-sale income ${fmt(d.included.asset_sale || 0)} THB → Online</li>
     </ul>
     <h3>Rules</h3>
@@ -736,11 +738,12 @@ const ABOUT = {
     <h3>รายการที่ไม่นับรวม</h3>
     <ul>
       <li>ใบแจ้งหนี้ค่าบริการจาก EDV ถึง Barefoot Inc. (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> บาท (ไม่รวม VAT)</li>
+      <li>ใบแจ้งหนี้ที่ไม่อยู่ในตารางรายได้ของ EDV (ยึดตารางรายได้เป็นหลัก): สินค้าที่เรียกเก็บจาก Barefoot Inc. เดือน ก.ค.–ส.ค. ${fmt(d.excluded.bft_goods_jul_aug || 0)} บาท, ขายผ้าให้นิติบุคคลเดือน ก.ค. IV202607013 ${fmt(d.excluded.fabric_sale || 0)} บาท, ใบแจ้งหนี้ Tabio IV202607012 ที่ออกใหม่ 31 ส.ค. ${fmt(d.excluded.tabio_reissue || 0)} บาท</li>
       <li>คำสั่งซื้อที่ถูกยกเลิก (Voided)</li>
     </ul>
     <h3>รายการที่ต้องพิจารณาแต่นับเป็นยอดขาย</h3>
     <ul>
-      <li>สินค้าที่เรียกเก็บจาก Barefoot Inc. (Central CL ฯลฯ) ${fmt(d.included.bft_goods || 0)} บาท → Consignment Other</li>
+      <li>สินค้าที่เรียกเก็บจาก Barefoot Inc. (ม.ค.–มิ.ย., Central CL ฯลฯ) ${fmt(d.included.bft_goods || 0)} บาท → Consignment Other</li>
       <li>รายได้จากการขายสินทรัพย์ ${fmt(d.included.asset_sale || 0)} บาท → Online</li>
     </ul>
     <h3>หลักการคำนวณ</h3>
@@ -762,7 +765,7 @@ const MAPPING = [
   ['Shopee', 'online', { ja:'販売チャネル Shopee', en:'Sales channel Shopee', th:'ช่องทาง Shopee' }],
   ['Lazada', 'online', { ja:'販売チャネル Lazada', en:'Sales channel Lazada', th:'ช่องทาง Lazada' }],
   ['Event', 'event', { ja:'倉庫 Event 1 / Event 2、Cart LP のレジで行ったイベント(レシート系列 RC-127、2026/5/21〜24)', en:'Branches "Event 1" / "Event 2", plus the event run on the Cart LP till (receipt series RC-127, 21–24 May 2026)', th:'สาขา Event 1 / Event 2 และอีเวนต์ที่ใช้เครื่อง Cart LP (ใบเสร็จชุด RC-127, 21–24 พ.ค. 2026)' }],
-  ['Consignment Other', 'consignment', { ja:'委託先への請求書(Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)、本社倉庫からの法人・個人への請求書(Barefoot Inc. への商品請求、生地の販売など)', en:'Invoices to consignment partners (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild) and main-warehouse invoices to companies/individuals (goods invoiced to Barefoot Inc., fabric sale, etc.)', th:'ใบแจ้งหนี้ถึงร้านฝากขาย (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild) และใบแจ้งหนี้จากคลังหลักถึงนิติบุคคล/บุคคล (สินค้าที่เรียกเก็บจาก Barefoot Inc., ขายผ้า ฯลฯ)' }],
+  ['Consignment Other', 'consignment', { ja:'委託先への請求書(Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)、本社倉庫からの法人・個人への請求書(1〜6月の Barefoot Inc. への商品請求など)', en:'Invoices to consignment partners (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild) and main-warehouse invoices to companies/individuals (goods invoiced to Barefoot Inc. in Jan–Jun, etc.)', th:'ใบแจ้งหนี้ถึงร้านฝากขาย (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild) และใบแจ้งหนี้จากคลังหลักถึงนิติบุคคล/บุคคล (สินค้าที่เรียกเก็บจาก Barefoot Inc. ม.ค.–มิ.ย. ฯลฯ)' }],
 ];
 function mappingTable(l) {
   return `<div class="tbl-scroll"><table><thead><tr><th>${I18N[l].col_channel}</th><th>${I18N[l].col_group}</th><th style="text-align:left">${l === 'ja' ? '元データの条件' : l === 'en' ? 'Rule in source data' : 'เงื่อนไขในข้อมูลต้นทาง'}</th></tr></thead><tbody>` +

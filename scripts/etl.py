@@ -38,6 +38,18 @@ ASSET_SALE_PREFIX = 'P'
 CART_EVENT_SERIES = 'R# RC-127-'
 CART_EVENT_DAYS = (date(2026, 5, 21), date(2026, 5, 24))
 
+# EDV's income sheet is the source of truth (Keisuke, 2026-09-28). These
+# invoices are absent from its sales columns, so they are not counted here.
+SHEET_EXCLUDED_INVOICES = {
+    'IV202607006': 'bft_goods_jul_aug',  # Central CL goods to BFT, Jul
+    'IV202607007': 'bft_goods_jul_aug',  # Central World goods to BFT, Jul
+    'IV202607008': 'bft_goods_jul_aug',  # Terminal 21 Rama3 goods to BFT, Jul
+    'IV202608010': 'bft_goods_jul_aug',  # Central CL goods to BFT, Aug (sheet: Marketing BFT)
+    'IV202608011': 'bft_goods_jul_aug',  # Central LP goods to BFT, Aug (sheet: Marketing BFT)
+    'IV202607013': 'fabric_sale',        # fabric sold to a company, 31 Jul
+    'IV202607012': 'tabio_reissue',      # voided in Jul, reissued 31 Aug under the same number
+}
+
 # Consignment partners appear as their own Warehouse/Branch on IV invoices.
 CONSIGNMENT_WAREHOUSES = {'Banana Run', 'Avarin', 'Runnercart', 'EastWest', 'Highlandner',
                           'Caveman', 'Anvil Camp', 'Pathwild'}
@@ -154,6 +166,9 @@ def main():
             line_amt = num(g(r, 'Total amount')) * ratio
             if prefix in SERVICE_PREFIX:
                 excluded['interco_service' if BFT_CUSTOMER_MARK in cust else 'service_other'] += line_amt
+                continue
+            if order_no in SHEET_EXCLUDED_INVOICES:
+                excluded[SHEET_EXCLUDED_INVOICES[order_no]] += line_amt
                 continue
             d = parse_dmy(g(r, 'Date'))
             channel = classify_channel(g(r, 'Warehouse/Branch'), g(r, 'Sales channel'), order_no, d)
