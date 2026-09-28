@@ -1,14 +1,13 @@
-"""EDV (Endeavors) retail sales ETL.
+"""EDV (Endeavors) sales ETL.
 
 Reads the order-system export (order_detail_*.xlsx, sheet 'Orders') and writes
 data/records.json -- one record per product line, VAT-inclusive amounts.
 
-Scope (agreed with Keisuke 2026-09-26): EDV's OWN sales to its customers.
-Excluded on purpose:
-  * EDV -> Barefoot Inc. (Thailand) SERVICE invoices (Marketing / Marketing Ads /
-    Car rent / Sales Commission -- codes MKT/CMS/CCR). Totals are still reported
-    in the 'excluded' block so they can be reconciled.
-  * Voided orders.
+Scope: EDV's income as its own income sheet reports it (Keisuke, 2026-09-28):
+retail/consignment sales plus the service fees EDV bills Barefoot Inc.
+(Marketing / Marketing Ads -> 'Marketing BFT', Sales Commission -> 'Commission',
+Car rent -> 'Car rent'). Voided orders and the invoices the sheet leaves out
+(SHEET_EXCLUDED_INVOICES) are excluded.
 
 Channel rules aligned with EDV's own income sheet (Keisuke, 2026-09-28):
   * Goods invoiced to Barefoot Inc. (Central CL etc.) count as 'Consignment Other'.
@@ -28,12 +27,12 @@ from pathlib import Path
 import openpyxl
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_SRC = Path.home() / 'Downloads' / 'order_detail_202609261433_u4ll.xlsx'
+DEFAULT_SRC = ROOT / 'data' / 'raw' / 'order_detail_202609261433_u4ll.xlsx'  # gitignored; Downloads gets cleaned
 SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_SRC
 OUT = ROOT / 'data' / 'records.json'
 
 BFT_CUSTOMER_MARK = 'แบร์ฟุต'  # "บริษัท แบร์ฟุตอิงค์ (ไทยแลนด์) จำกัด"
-SERVICE_PREFIX = {'MKT', 'CMS', 'CCR'}  # EDV -> BFT service fees, never sales
+SERVICE_CHANNEL = {'MKT': 'Marketing BFT', 'CMS': 'Commission', 'CCR': 'Car rent'}  # EDV -> BFT fees
 ASSET_SALE_PREFIX = 'P'
 CART_EVENT_SERIES = 'R# RC-127-'
 CART_EVENT_DAYS = (date(2026, 5, 21), date(2026, 5, 24))
@@ -41,13 +40,16 @@ CART_EVENT_DAYS = (date(2026, 5, 21), date(2026, 5, 24))
 # EDV's income sheet is the source of truth (Keisuke, 2026-09-28). These
 # invoices are absent from its sales columns, so they are not counted here.
 SHEET_EXCLUDED_INVOICES = {
-    'IV202607006': 'bft_goods_jul_aug',  # Central CL goods to BFT, Jul
-    'IV202607007': 'bft_goods_jul_aug',  # Central World goods to BFT, Jul
-    'IV202607008': 'bft_goods_jul_aug',  # Terminal 21 Rama3 goods to BFT, Jul
-    'IV202608010': 'bft_goods_jul_aug',  # Central CL goods to BFT, Aug (sheet: Marketing BFT)
-    'IV202608011': 'bft_goods_jul_aug',  # Central LP goods to BFT, Aug (sheet: Marketing BFT)
+    'IV202607006': 'bft_goods_jul',  # Central CL goods to BFT, Jul
+    'IV202607007': 'bft_goods_jul',  # Central World goods to BFT, Jul
+    'IV202607008': 'bft_goods_jul',  # Terminal 21 Rama3 goods to BFT, Jul
     'IV202607013': 'fabric_sale',        # fabric sold to a company, 31 Jul
     'IV202607012': 'tabio_reissue',      # voided in Jul, reissued 31 Aug under the same number
+}
+# The sheet books August's goods-to-BFT invoices inside its Marketing BFT column.
+SHEET_CHANNEL_OVERRIDE = {
+    'IV202608010': 'Marketing BFT',  # Central CL goods to BFT, Aug
+    'IV202608011': 'Marketing BFT',  # Central LP goods to BFT, Aug
 }
 
 # Consignment partners appear as their own Warehouse/Branch on IV invoices.
@@ -164,21 +166,24 @@ def main():
             pc = g(r, 'Product code')
             prefix = code_prefix(pc)
             line_amt = num(g(r, 'Total amount')) * ratio
-            if prefix in SERVICE_PREFIX:
-                excluded['interco_service' if BFT_CUSTOMER_MARK in cust else 'service_other'] += line_amt
-                continue
             if order_no in SHEET_EXCLUDED_INVOICES:
                 excluded[SHEET_EXCLUDED_INVOICES[order_no]] += line_amt
                 continue
             d = parse_dmy(g(r, 'Date'))
-            channel = classify_channel(g(r, 'Warehouse/Branch'), g(r, 'Sales channel'), order_no, d)
-            brand = BRAND_PREFIX.get(prefix, 'Others')
-            model = model_from_name(g(r, 'Product name'))
-            if prefix == ASSET_SALE_PREFIX and re.fullmatch(r'P\d+', str(pc)):
-                model = 'Asset sale'
-                included['asset_sale'] += line_amt
-            if BFT_CUSTOMER_MARK in cust:
-                included['bft_goods'] += line_amt
+            qty = num(g(r, 'Quantity'))
+            if prefix in SERVICE_CHANNEL:
+                # a fee, not goods: own brand, and no units so unit KPIs stay product-only
+                channel, brand, model, qty = SERVICE_CHANNEL[prefix], 'Service', SERVICE_CHANNEL[prefix], 0.0
+            else:
+                channel = SHEET_CHANNEL_OVERRIDE.get(order_no) or classify_channel(
+                    g(r, 'Warehouse/Branch'), g(r, 'Sales channel'), order_no, d)
+                brand = BRAND_PREFIX.get(prefix, 'Others')
+                model = model_from_name(g(r, 'Product name'))
+                if prefix == ASSET_SALE_PREFIX and re.fullmatch(r'P\d+', str(pc)):
+                    model = 'Asset sale'
+                    included['asset_sale'] += line_amt
+                if BFT_CUSTOMER_MARK in cust:
+                    included['bft_goods'] += line_amt
             records.append({
                 'date': d.isoformat(),
                 'month': d.strftime('%Y-%m'),
@@ -190,7 +195,7 @@ def main():
                 'model': model,
                 'code': pc,
                 'category': g(r, 'Category') or '',
-                'qty': num(g(r, 'Quantity')),
+                'qty': qty,
                 'amount_vat_incl': round(line_amt, 4),
                 'payment_status': g(r, 'Payment status'),
             })

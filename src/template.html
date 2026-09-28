@@ -20,6 +20,7 @@
   --g-online:#d95926;
   --g-event:#199e70;
   --g-consignment:#c98500;
+  --g-service:#9085e9;
   --other-gray:#7E9587;
   --sans:"Noto Sans JP","Noto Sans Thai",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Meiryo","Yu Gothic","Leelawadee UI",sans-serif;
   --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Roboto Mono",monospace;
@@ -280,12 +281,12 @@ const I18N = {
     all_channels:'全チャネル', all_brands:'全ブランド',
     note_exvat:'金額はすべて税抜(VAT 7% 控除後)。伝票数は注文単位。',
     note_sort:'列見出しをクリックすると並び替えできます。',
-    note_fold:'ドーナツは上位7ブランド+「その他」に集約。表は全ブランドを表示。',
+    note_fold:'商品売上のみ(BFT向けサービス収入を除く)。ドーナツは上位7ブランド+「その他」に集約し、表は全ブランドを表示。',
     note_model:'モデル名は商品名の「(」より前を使用(色・サイズ違いを統合)。',
     period_label:'対象期間', updated:'データ更新', source:'出典',
     p_all:'累計', p_h1:'上期(1〜6月)', p_q1:'Q1(1〜3月)', p_q2:'Q2(4〜6月)', p_q3:'Q3',
-    g_store:'実店舗', g_online:'オンライン', g_event:'イベント', g_consignment:'委託・法人',
-    ch_Online:'Online(SNS・直販)', 'ch_Consignment Other':'Consignment Other(委託・法人)', ch_Event:'イベント',
+    g_store:'実店舗', g_online:'オンライン', g_event:'イベント', g_consignment:'委託・法人', g_service:'BFT向けサービス', excl_service:'BFT向けサービス収入を除く',
+    ch_Online:'Online(SNS・直販)', 'ch_Consignment Other':'Consignment Other(委託・法人)', 'ch_Marketing BFT':'Marketing BFT(マーケティング)', ch_Commission:'Commission(販売手数料)', 'ch_Car rent':'Car rent(車両賃貸)', ch_Event:'イベント',
     b_Others:'その他',
     no_data:'この期間のデータはありません',
   },
@@ -306,12 +307,12 @@ const I18N = {
     all_channels:'All channels', all_brands:'All brands',
     note_exvat:'All amounts exclude 7% VAT. Orders are counted per sales order.',
     note_sort:'Click a column header to sort.',
-    note_fold:'The donut shows the top 7 brands plus "Others"; the table lists every brand.',
+    note_fold:'Goods only (service income from BFT excluded). The donut shows the top 7 brands plus "Others"; the table lists every brand.',
     note_model:'Model = product name before "(" (colors and sizes merged).',
     period_label:'Period', updated:'Data updated', source:'Source',
     p_all:'YTD', p_h1:'H1 (Jan–Jun)', p_q1:'Q1 (Jan–Mar)', p_q2:'Q2 (Apr–Jun)', p_q3:'Q3',
-    g_store:'Stores', g_online:'Online', g_event:'Events', g_consignment:'Consignment/B2B',
-    ch_Online:'Online (social/direct)', 'ch_Consignment Other':'Consignment Other (consignment/B2B)', ch_Event:'Event',
+    g_store:'Stores', g_online:'Online', g_event:'Events', g_consignment:'Consignment/B2B', g_service:'Services to BFT', excl_service:'Excludes service income from BFT',
+    ch_Online:'Online (social/direct)', 'ch_Consignment Other':'Consignment Other (consignment/B2B)', 'ch_Marketing BFT':'Marketing BFT', ch_Commission:'Commission', 'ch_Car rent':'Car rent', ch_Event:'Event',
     b_Others:'Others',
     no_data:'No data for this period',
   },
@@ -332,12 +333,12 @@ const I18N = {
     all_channels:'ทุกช่องทาง', all_brands:'ทุกแบรนด์',
     note_exvat:'ยอดเงินทั้งหมดไม่รวม VAT 7% จำนวนบิลนับตามใบสั่งขาย',
     note_sort:'คลิกหัวคอลัมน์เพื่อเรียงลำดับ',
-    note_fold:'กราฟโดนัทแสดง 7 แบรนด์แรกและ "อื่นๆ" ส่วนตารางแสดงทุกแบรนด์',
+    note_fold:'เฉพาะยอดขายสินค้า (ไม่รวมรายได้ค่าบริการจาก BFT) กราฟโดนัทแสดง 7 แบรนด์แรกและ "อื่นๆ" ส่วนตารางแสดงทุกแบรนด์',
     note_model:'ชื่อรุ่น = ชื่อสินค้าก่อนเครื่องหมาย "(" (รวมสีและไซซ์)',
     period_label:'ช่วงเวลา', updated:'อัปเดตข้อมูล', source:'ที่มา',
     p_all:'สะสม', p_h1:'ครึ่งปีแรก (ม.ค.–มิ.ย.)', p_q1:'Q1 (ม.ค.–มี.ค.)', p_q2:'Q2 (เม.ย.–มิ.ย.)', p_q3:'Q3',
-    g_store:'หน้าร้าน', g_online:'ออนไลน์', g_event:'อีเวนต์', g_consignment:'ฝากขาย/นิติบุคคล',
-    ch_Online:'ออนไลน์ (โซเชียล/ขายตรง)', 'ch_Consignment Other':'Consignment Other (ฝากขาย/นิติบุคคล)', ch_Event:'อีเวนต์',
+    g_store:'หน้าร้าน', g_online:'ออนไลน์', g_event:'อีเวนต์', g_consignment:'ฝากขาย/นิติบุคคล', g_service:'บริการให้ BFT', excl_service:'ไม่รวมรายได้ค่าบริการจาก BFT',
+    ch_Online:'ออนไลน์ (โซเชียล/ขายตรง)', 'ch_Consignment Other':'Consignment Other (ฝากขาย/นิติบุคคล)', 'ch_Marketing BFT':'Marketing BFT (การตลาด)', ch_Commission:'Commission (ค่าคอมมิชชั่น)', 'ch_Car rent':'Car rent (ค่าเช่ารถ)', ch_Event:'อีเวนต์',
     b_Others:'อื่นๆ',
     no_data:'ไม่มีข้อมูลในช่วงเวลานี้',
   },
@@ -360,6 +361,7 @@ const M = DATA.months;
 const CH = DATA.channels.map(c => c.key);
 const GROUP_OF = Object.fromEntries(DATA.channels.map(c => [c.key, c.group]));
 const GROUPS = DATA.groups;
+const PRODUCT_CH = CH.filter(c => GROUP_OF[c] !== 'service'); // brand analysis covers goods only
 const GCOLOR = g => `var(--g-${g})`;
 const BRAND_HUES = ['#3987e5','#d95926','#199e70','#c98500','#d55181','#008300','#9085e9'];
 const TOP_BRANDS = DATA.brands.filter(b => b !== 'Others').slice(0, 7);
@@ -443,16 +445,19 @@ function renderKpis() {
   const byG = {}; let tot = [0, 0, 0];
   CH.forEach(c => { const v = chSum(c, ms); const g = GROUP_OF[c];
     const o = byG[g] || (byG[g] = [0, 0, 0]); for (let i = 0; i < 3; i++) { o[i] += v[i]; tot[i] += v[i]; } });
-  const bars = (i) => `<div class="bars">${GROUPS.map(g => {
-    const v = byG[g]?.[i] || 0, p = tot[i] ? v / tot[i] * 100 : 0;
+  // units, orders and avg. order describe customer sales only; fee invoices to BFT would distort them
+  const PG = GROUPS.filter(g => g !== 'service');
+  const sum = (i, gs) => gs.reduce((s, g) => s + (byG[g]?.[i] || 0), 0);
+  const bars = (i, gs) => { const den = sum(i, gs); return `<div class="bars">${gs.map(g => {
+    const v = byG[g]?.[i] || 0, p = den ? v / den * 100 : 0;
     return `<div class="hbar"><span>${esc(gName(g))}</span><div class="track"><div class="fill" style="width:${p}%;background:${GCOLOR(g)}"></div></div><span class="pct">${p.toFixed(0)}%</span></div>`;
-  }).join('')}</div>`;
-  const aov = tot[2] ? tot[0] / tot[2] : 0;
+  }).join('')}</div>`; };
+  const ordP = sum(2, PG), aov = ordP ? sum(0, PG) / ordP : 0;
   document.getElementById('kpis').innerHTML = `
-    <div class="kpi"><div class="lbl">${t('k_sales')}</div><div class="val">${fmt(tot[0])}<span class="unit">${t('unit_thb')}</span></div>${bars(0)}</div>
-    <div class="kpi"><div class="lbl">${t('k_qty')}</div><div class="val">${fmt(tot[1])}<span class="unit">${t('unit_pcs')}</span></div>${bars(1)}</div>
-    <div class="kpi"><div class="lbl">${t('k_orders')}</div><div class="val">${fmt(tot[2])}<span class="unit">${t('unit_orders')}</span></div>${bars(2)}</div>
-    <div class="kpi"><div class="lbl">${t('k_aov')}</div><div class="val">${fmt(aov)}<span class="unit">${t('unit_thb')}</span></div><div class="sub">${esc(periods().find(p => p.id === S.kpiPeriod)?.label || '')}</div></div>`;
+    <div class="kpi"><div class="lbl">${t('k_sales')}</div><div class="val">${fmt(tot[0])}<span class="unit">${t('unit_thb')}</span></div>${bars(0, GROUPS)}</div>
+    <div class="kpi"><div class="lbl">${t('k_qty')}</div><div class="val">${fmt(sum(1, PG))}<span class="unit">${t('unit_pcs')}</span></div>${bars(1, PG)}</div>
+    <div class="kpi"><div class="lbl">${t('k_orders')}</div><div class="val">${fmt(ordP)}<span class="unit">${t('unit_orders')}</span></div>${bars(2, PG)}<div class="sub">${t('excl_service')}</div></div>
+    <div class="kpi"><div class="lbl">${t('k_aov')}</div><div class="val">${fmt(aov)}<span class="unit">${t('unit_thb')}</span></div><div class="sub">${t('excl_service')} · ${esc(periods().find(p => p.id === S.kpiPeriod)?.label || '')}</div></div>`;
 }
 
 /* ------------------------------------------------------------------ stacked monthly bar */
@@ -636,7 +641,7 @@ function renderChDetail() {
 /* ------------------------------------------------------------------ products tab */
 function renderBrand() {
   const ms = periodMonths(S.brPeriod), idx = S.brMetric === 'amt' ? 0 : 1;
-  const chs = S.brChannel === 'all' ? CH : [S.brChannel];
+  const chs = S.brChannel === 'all' ? PRODUCT_CH : [S.brChannel];
   const bs = brandSum(chs, ms);
   const tb = brandTable(bs, idx);
   const items = TOP_BRANDS.map(b => ({ key: b, color: brandColor(b), value: bs[b]?.[idx] || 0 }));
@@ -679,19 +684,18 @@ function renderModels() {
 const ABOUT = {
   ja: d => `
     <h3>このダッシュボードが示すもの</h3>
-    <p>Endeavors社(EDV)自身が顧客に販売した実績(小売)です。Barefoot Inc. の販売実績ダッシュボードにある「対EDV」は Barefoot から EDV への<b>卸請求額</b>で、ここで扱う数字とは別物です。</p>
+    <p>Endeavors社(EDV)の売上実績です。EDV の収入表(Before Vat)を正とし、顧客への販売(小売・委託・法人)に加えて、Barefoot Inc. へのサービス収入(Marketing BFT・Commission・Car rent)を含みます。Barefoot Inc. の販売実績ダッシュボードにある「対EDV」は Barefoot から EDV への<b>卸請求額</b>で、ここで扱う数字とは別物です。</p>
     <div class="warn">Barefoot側ダッシュボードとの重複: 2026年分のBarefoot側では、EDVの店舗・オンライン・イベント・委託の生データは読み込まれていません(「対EDV」に置換済み)。ただし Central 百貨店内の売場(Chidlom 等)の小売売上は Barefoot 側に計上されています。本ダッシュボードの「Central LP」は Coollabo(Central Ladprao 3F)の売場で、Barefoot 側の百貨店5店舗とは別の売場です。重複の扱いは両ダッシュボードを並べて確認したうえで決定します。</div>
-    <h3>チャネル区分(9区分)</h3>
+    <h3>チャネル区分(12区分)</h3>
     ${mappingTable('ja')}
     <h3>計上から除外したもの</h3>
     <ul>
-      <li>EDV → Barefoot Inc. へのサービス料請求(Marketing/Marketing Ads/Car rent/Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB(税抜)</li>
-      <li>EDV の収入表に計上されていない請求書(収入表を正とする): 7・8月の Barefoot Inc. への商品請求 ${fmt(d.excluded.bft_goods_jul_aug || 0)} THB、7月の法人向け生地販売 IV202607013 ${fmt(d.excluded.fabric_sale || 0)} THB、8/31 再発行の Tabio 請求書 IV202607012 ${fmt(d.excluded.tabio_reissue || 0)} THB</li>
+      <li>EDV の収入表に計上されていない請求書(収入表を正とする): 7月の Barefoot Inc. への商品請求 ${fmt(d.excluded.bft_goods_jul || 0)} THB、7月の法人向け生地販売 IV202607013 ${fmt(d.excluded.fabric_sale || 0)} THB、8/31 再発行の Tabio 請求書 IV202607012 ${fmt(d.excluded.tabio_reissue || 0)} THB</li>
       <li>Status が Voided の注文</li>
     </ul>
     <h3>判断を要したが計上しているもの</h3>
     <ul>
-      <li>Barefoot Inc. への商品請求(1〜6月、Central CL など) ${fmt(d.included.bft_goods || 0)} THB → Consignment Other</li>
+      <li>Barefoot Inc. への商品請求(Central CL など) ${fmt(d.included.bft_goods || 0)} THB → 1〜6月は Consignment Other、8月は Marketing BFT(収入表の列に合わせる)</li>
       <li>資産売却収入 ${fmt(d.included.asset_sale || 0)} THB → Online</li>
     </ul>
     <h3>集計ルール</h3>
@@ -705,19 +709,18 @@ const ABOUT = {
     <p>${esc(d.source_file)}(受注システムの販売明細エクスポート)・集計 ${esc(d.generated_at)}</p>`,
   en: d => `
     <h3>What this dashboard shows</h3>
-    <p>Sales made by Endeavors Co., Ltd. (EDV) to its own customers (retail). The "対EDV" line in the Barefoot Inc. dashboard is Barefoot's <b>wholesale invoicing</b> to EDV and is a different number.</p>
+    <p>Sales of Endeavors Co., Ltd. (EDV), taking EDV's income sheet (before VAT) as the source of truth: sales to customers (retail, consignment, B2B) plus service income from Barefoot Inc. (Marketing BFT, Commission, Car rent). The "対EDV" line in the Barefoot Inc. dashboard is Barefoot's <b>wholesale invoicing</b> to EDV and is a different number.</p>
     <div class="warn">Overlap with the Barefoot dashboard: for 2026, the Barefoot dashboard no longer loads EDV's store, online, event or consignment files (they were replaced by "対EDV"). Retail sales at Central department-store counters (Chidlom etc.) are still counted there. "Central LP" here is the Coollabo counter (Central Ladprao 3F), a different counter from Barefoot's five department-store counters. How to treat the overlap will be decided after comparing both dashboards side by side.</div>
-    <h3>Channels (9)</h3>
+    <h3>Channels (12)</h3>
     ${mappingTable('en')}
     <h3>Excluded</h3>
     <ul>
-      <li>EDV → Barefoot Inc. service invoices (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> THB (ex-VAT)</li>
-      <li>Invoices not in EDV's income sheet (the sheet is the source of truth): goods invoiced to Barefoot Inc. in Jul–Aug ${fmt(d.excluded.bft_goods_jul_aug || 0)} THB, July fabric sale to a company IV202607013 ${fmt(d.excluded.fabric_sale || 0)} THB, Tabio invoice IV202607012 reissued on 31 Aug ${fmt(d.excluded.tabio_reissue || 0)} THB</li>
+      <li>Invoices not in EDV's income sheet (the sheet is the source of truth): goods invoiced to Barefoot Inc. in July ${fmt(d.excluded.bft_goods_jul || 0)} THB, July fabric sale to a company IV202607013 ${fmt(d.excluded.fabric_sale || 0)} THB, Tabio invoice IV202607012 reissued on 31 Aug ${fmt(d.excluded.tabio_reissue || 0)} THB</li>
       <li>Voided orders</li>
     </ul>
     <h3>Judgement calls, counted as sales</h3>
     <ul>
-      <li>Goods invoiced to Barefoot Inc. (Jan–Jun, Central CL etc.) ${fmt(d.included.bft_goods || 0)} THB → Consignment Other</li>
+      <li>Goods invoiced to Barefoot Inc. (Central CL etc.) ${fmt(d.included.bft_goods || 0)} THB → Consignment Other for Jan–Jun, Marketing BFT for August (matching the sheet's columns)</li>
       <li>Asset-sale income ${fmt(d.included.asset_sale || 0)} THB → Online</li>
     </ul>
     <h3>Rules</h3>
@@ -731,19 +734,18 @@ const ABOUT = {
     <p>${esc(d.source_file)} (order-system sales detail export) · built ${esc(d.generated_at)}</p>`,
   th: d => `
     <h3>แดชบอร์ดนี้แสดงอะไร</h3>
-    <p>ยอดขายที่บริษัท เอ็นเดเวอร์ซ จำกัด (EDV) ขายให้ลูกค้าของตนเอง (ค้าปลีก) ส่วน "対EDV" ในแดชบอร์ดของ Barefoot Inc. คือ<b>ยอดขายส่ง</b>ที่ Barefoot เรียกเก็บจาก EDV ซึ่งเป็นตัวเลขคนละตัวกัน</p>
+    <p>ยอดขายของบริษัท เอ็นเดเวอร์ซ จำกัด (EDV) โดยยึดตารางรายได้ของ EDV (ก่อน VAT) เป็นหลัก ได้แก่ ยอดขายให้ลูกค้า (ค้าปลีก ฝากขาย นิติบุคคล) และรายได้ค่าบริการจาก Barefoot Inc. (Marketing BFT, Commission, Car rent) ส่วน "対EDV" ในแดชบอร์ดของ Barefoot Inc. คือ<b>ยอดขายส่ง</b>ที่ Barefoot เรียกเก็บจาก EDV ซึ่งเป็นตัวเลขคนละตัวกัน</p>
     <div class="warn">ส่วนที่ซ้ำกับแดชบอร์ด Barefoot: ข้อมูลปี 2026 ฝั่ง Barefoot ไม่ได้นำไฟล์หน้าร้าน ออนไลน์ อีเวนต์ และฝากขายของ EDV มาใช้แล้ว (เปลี่ยนเป็น "対EDV") แต่ยอดขายปลีกของเคาน์เตอร์ในห้าง Central (Chidlom ฯลฯ) ยังนับอยู่ฝั่ง Barefoot ส่วน "Central LP" ในแดชบอร์ดนี้คือเคาน์เตอร์ Coollabo (Central ลาดพร้าว ชั้น 3) ซึ่งเป็นคนละเคาน์เตอร์กับ 5 เคาน์เตอร์ในห้างของ Barefoot วิธีจัดการส่วนที่ซ้ำจะตัดสินใจหลังจากเทียบทั้งสองแดชบอร์ด</div>
-    <h3>ช่องทาง (9 ช่องทาง)</h3>
+    <h3>ช่องทาง (12 ช่องทาง)</h3>
     ${mappingTable('th')}
     <h3>รายการที่ไม่นับรวม</h3>
     <ul>
-      <li>ใบแจ้งหนี้ค่าบริการจาก EDV ถึง Barefoot Inc. (Marketing / Marketing Ads / Car rent / Sales Commission) <b>${fmt(d.excluded.interco_service || 0)}</b> บาท (ไม่รวม VAT)</li>
-      <li>ใบแจ้งหนี้ที่ไม่อยู่ในตารางรายได้ของ EDV (ยึดตารางรายได้เป็นหลัก): สินค้าที่เรียกเก็บจาก Barefoot Inc. เดือน ก.ค.–ส.ค. ${fmt(d.excluded.bft_goods_jul_aug || 0)} บาท, ขายผ้าให้นิติบุคคลเดือน ก.ค. IV202607013 ${fmt(d.excluded.fabric_sale || 0)} บาท, ใบแจ้งหนี้ Tabio IV202607012 ที่ออกใหม่ 31 ส.ค. ${fmt(d.excluded.tabio_reissue || 0)} บาท</li>
+      <li>ใบแจ้งหนี้ที่ไม่อยู่ในตารางรายได้ของ EDV (ยึดตารางรายได้เป็นหลัก): สินค้าที่เรียกเก็บจาก Barefoot Inc. เดือน ก.ค. ${fmt(d.excluded.bft_goods_jul || 0)} บาท, ขายผ้าให้นิติบุคคลเดือน ก.ค. IV202607013 ${fmt(d.excluded.fabric_sale || 0)} บาท, ใบแจ้งหนี้ Tabio IV202607012 ที่ออกใหม่ 31 ส.ค. ${fmt(d.excluded.tabio_reissue || 0)} บาท</li>
       <li>คำสั่งซื้อที่ถูกยกเลิก (Voided)</li>
     </ul>
     <h3>รายการที่ต้องพิจารณาแต่นับเป็นยอดขาย</h3>
     <ul>
-      <li>สินค้าที่เรียกเก็บจาก Barefoot Inc. (ม.ค.–มิ.ย., Central CL ฯลฯ) ${fmt(d.included.bft_goods || 0)} บาท → Consignment Other</li>
+      <li>สินค้าที่เรียกเก็บจาก Barefoot Inc. (Central CL ฯลฯ) ${fmt(d.included.bft_goods || 0)} บาท → ม.ค.–มิ.ย. เป็น Consignment Other, ส.ค. เป็น Marketing BFT (ตามคอลัมน์ของตารางรายได้)</li>
       <li>รายได้จากการขายสินทรัพย์ ${fmt(d.included.asset_sale || 0)} บาท → Online</li>
     </ul>
     <h3>หลักการคำนวณ</h3>
@@ -766,6 +768,9 @@ const MAPPING = [
   ['Lazada', 'online', { ja:'販売チャネル Lazada', en:'Sales channel Lazada', th:'ช่องทาง Lazada' }],
   ['Event', 'event', { ja:'倉庫 Event 1 / Event 2、Cart LP のレジで行ったイベント(レシート系列 RC-127、2026/5/21〜24)', en:'Branches "Event 1" / "Event 2", plus the event run on the Cart LP till (receipt series RC-127, 21–24 May 2026)', th:'สาขา Event 1 / Event 2 และอีเวนต์ที่ใช้เครื่อง Cart LP (ใบเสร็จชุด RC-127, 21–24 พ.ค. 2026)' }],
   ['Consignment Other', 'consignment', { ja:'委託先への請求書(Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild)、本社倉庫からの法人・個人への請求書(1〜6月の Barefoot Inc. への商品請求など)', en:'Invoices to consignment partners (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild) and main-warehouse invoices to companies/individuals (goods invoiced to Barefoot Inc. in Jan–Jun, etc.)', th:'ใบแจ้งหนี้ถึงร้านฝากขาย (Banana Run, Avarin, Runnercart, EastWest, Highlandner, Caveman, Anvil Camp, Pathwild) และใบแจ้งหนี้จากคลังหลักถึงนิติบุคคล/บุคคล (สินค้าที่เรียกเก็บจาก Barefoot Inc. ม.ค.–มิ.ย. ฯลฯ)' }],
+  ['Marketing BFT', 'service', { ja:'Barefoot Inc. へのマーケティング請求(商品コード MKT。Marketing / Marketing Ads)、8月の Barefoot Inc. への商品請求', en:'Marketing invoices to Barefoot Inc. (code MKT: Marketing / Marketing Ads), plus August goods invoiced to Barefoot Inc.', th:'ใบแจ้งหนี้ค่าการตลาดถึง Barefoot Inc. (รหัส MKT: Marketing / Marketing Ads) และสินค้าที่เรียกเก็บจาก Barefoot Inc. เดือน ส.ค.' }],
+  ['Commission', 'service', { ja:'Barefoot Inc. への販売手数料請求(商品コード CMS)', en:'Sales commission invoiced to Barefoot Inc. (code CMS)', th:'ค่าคอมมิชชั่นที่เรียกเก็บจาก Barefoot Inc. (รหัส CMS)' }],
+  ['Car rent', 'service', { ja:'Barefoot Inc. への車両賃貸料請求(商品コード CCR)', en:'Car rent invoiced to Barefoot Inc. (code CCR)', th:'ค่าเช่ารถที่เรียกเก็บจาก Barefoot Inc. (รหัส CCR)' }],
 ];
 function mappingTable(l) {
   return `<div class="tbl-scroll"><table><thead><tr><th>${I18N[l].col_channel}</th><th>${I18N[l].col_group}</th><th style="text-align:left">${l === 'ja' ? '元データの条件' : l === 'en' ? 'Rule in source data' : 'เงื่อนไขในข้อมูลต้นทาง'}</th></tr></thead><tbody>` +
@@ -784,7 +789,7 @@ function renderAll() {
   const ps = periods();
   ['kpiPeriod', 'sharePeriod', 'chtPeriod', 'chdPeriod', 'brPeriod', 'mdPeriod'].forEach(id => fillSelect(id, ps, S[id]));
   fillSelect('chdChannel', CH.map(c => ({ id: c, label: chName(c) })), S.chdChannel);
-  fillSelect('brChannel', [{ id: 'all', label: t('all_channels') }, ...CH.map(c => ({ id: c, label: chName(c) }))], S.brChannel);
+  fillSelect('brChannel', [{ id: 'all', label: t('all_channels') }, ...PRODUCT_CH.map(c => ({ id: c, label: chName(c) }))], S.brChannel);
   fillSelect('mdBrand', [{ id: 'all', label: t('all_brands') }, ...DATA.brands.map(b => ({ id: b, label: bName(b) }))], S.mdBrand);
   renderKpis(); renderMonthly(); renderShare(); renderChTable(); renderChDetail(); renderBrand(); renderModels();
   document.getElementById('about').innerHTML = ABOUT[LANG](DATA);

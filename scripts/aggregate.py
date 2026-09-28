@@ -17,8 +17,10 @@ CHANNELS = [  # display order; group = chart color family
     ('K village', 'store'), ('Thaniya', 'store'), ('Central LP', 'store'), ('Cart LP', 'store'),
     ('Online', 'online'), ('Shopee', 'online'), ('Lazada', 'online'),
     ('Event', 'event'), ('Consignment Other', 'consignment'),
+    ('Marketing BFT', 'service'), ('Commission', 'service'), ('Car rent', 'service'),
 ]
-GROUPS = ['store', 'online', 'event', 'consignment']
+GROUPS = ['store', 'online', 'event', 'consignment', 'service']
+SERVICE_BRAND = 'Service'  # fee lines: kept out of the brand list and model ranking
 
 
 def ser(v_vat_incl):
@@ -38,6 +40,8 @@ def main():
         a, q, m, c = r['amount_vat_incl'], r['qty'], r['month'], r['channel']
         e = ch[c][m]; e[0] += a; e[1] += q; e[2].add(r['order_key'])
         b = ch_brand[c][m][r['brand']]; b[0] += a; b[1] += q
+        if r['brand'] == SERVICE_BRAND:
+            continue
         k = model[m][r['brand'] + '\t' + r['model']]; k[0] += a; k[1] += q
         brand_total[r['brand']] += a
 
