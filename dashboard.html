@@ -182,19 +182,9 @@ th .arrow{color:var(--accent);}
 
     <section class="card">
       <div class="card-head">
-        <h2><span class="num">02</span><span data-i18n="s_monthly"></span></h2>
-        <div class="controls">
-          <div class="seg" id="monthlyMetric">
-            <button data-v="amt" class="active" data-i18n="m_amount"></button>
-            <button data-v="qty" data-i18n="m_qty"></button>
-          </div>
-        </div>
+        <h2><span class="num">02</span><span data-i18n="s_monthly_total"></span></h2>
       </div>
-      <p class="note top" data-i18n="note_store_split"></p>
-      <div class="legend" id="monthlyLegend"></div>
       <div class="chart" id="monthlyChart"></div>
-      <div class="btn-row"><button class="btn-more" id="monthlyDetailBtn"></button></div>
-      <div class="detail tbl-scroll" id="monthlyDetail" hidden></div>
     </section>
   </div>
 
@@ -276,7 +266,7 @@ th .arrow{color:var(--accent);}
   <div class="tab" id="tab-channels">
     <section class="card">
       <div class="card-head">
-        <h2><span class="num">01</span><span data-i18n="s_monthly_ch"></span></h2>
+        <h2><span class="num">01</span><span data-i18n="s_monthly"></span></h2>
         <div class="controls">
           <div class="seg" id="chMonthlyMetric">
             <button data-v="amt" class="active" data-i18n="m_amount"></button>
@@ -373,7 +363,10 @@ th .arrow{color:var(--accent);}
     <section class="card">
       <div class="card-head"><h2><span class="num">05</span><span data-i18n="p05"></span></h2></div>
       <p class="note top" data-i18n="p05_note"></p>
-      <div class="chart" id="vsLine"></div>
+      <div class="grid2">
+        <div class="box"><h3 class="sub" data-i18n="p05_pairs"></h3><div class="chart" id="vsBar"></div></div>
+        <div class="box"><h3 class="sub" data-i18n="p05_ratio"></h3><div class="chart" id="vsLine"></div></div>
+      </div>
     </section>
   </div>
 
@@ -393,7 +386,7 @@ const I18N = {
     title:'EDV 販売実績ダッシュボード',
     tab_overview:'全体', tab_vff:'VFFシューズ', tab_channels:'チャネル別', tab_products:'商品・ブランド別', tab_about:'このデータについて',
     s_summary:'全体サマリー', s_monthly:'月次推移(チャネル区分別)', s_share:'チャネル別構成',
-    s_monthly_ch:'月次推移(チャネル別内訳)', s_pay:'決済方法別比率(全体)', s_chdetail:'チャネルごとの詳細',
+    s_monthly_total:'月別売上金額', s_pay:'決済方法別比率(全体)', s_chdetail:'チャネルごとの詳細',
     chd_line:'月次売上推移', chd_brand:'ブランド構成比',
     m_amount:'金額', m_qty:'点数', m_pairs:'足数',
     k_sales:'売上金額(税抜)', k_qty:'販売点数', k_orders_aov:'伝票数・客単価', k_aov:'客単価(税抜)',
@@ -406,7 +399,6 @@ const I18N = {
     col_pairs:'足数', col_color:'カラー', col_size:'サイズ', col_gender:'性別', col_brand_share:'ブランド内比率', col_ratio:'比率',
     total:'合計', all_channels:'全チャネル', all_brands:'全ブランド', other:'その他',
     note_exvat:'金額はすべて税抜(VAT 7% 控除後)。点数・伝票数・客単価は商品の販売のみ(BFT向けサービス収入を除く)。',
-    note_store_split:'実店舗は店舗ごとに区切り線で分けています(K village / Thaniya / Central LP / Cart LP の順)。',
     note_ch_split:'区分内はチャネルごとに区切り線で分けています。カーソルを合わせるとチャネル別の内訳が出ます。',
     note_sort:'列見出しをクリックすると並び替えできます。',
     note_goods:'商品売上のみ(BFT向けサービス収入を除く)。ドーナツは上位7ブランド+「その他」。',
@@ -422,7 +414,7 @@ const I18N = {
     p01:'ブランド別 売上構成(全体)', p01_share:'ブランド別 シェア', p01_break:'ブランド別 内訳',
     p02:'チャネル別 ブランド構成', p02_note:'プルダウンでチャネルを選ぶと、そのチャネル内のブランド別売上構成比(金額ベース)を表示します。',
     p03:'モデル別ランキング(全ブランド合算・サイズ/カラー合算)', top10:'売上トップ10', worst10:'売上ワースト10',
-    p04:'ブランド別 売上詳細', p05:'V-Soul 販売比率推移(月別)', p05_note:'VFF ブランドの売上に占める V-Soul の構成比(月別)。',
+    p04:'ブランド別 売上詳細', p05:'V-Soul 販売比率推移(月別)', p05_note:'V-Soul の月別販売足数と、VFF ブランドの売上に占める V-Soul の構成比。', p05_pairs:'V-Soul 販売足数', p05_ratio:'VFF 売上に占める V-Soul 比率', k_total_amt:'総売上金額(税抜)', k_total_qty:'総点数', k_total_orders:'客数(伝票数)', col_item:'項目',
     summary_fmt:'売上 {amt} THB · {qty} 点 · {ord} 件 · 客単価 {aov} THB',
     brand_summary_fmt:'{n} モデル · 売上 {amt} THB · {qty} 点',
     period_label:'対象期間', updated:'データ更新', source:'出典',
@@ -436,7 +428,7 @@ const I18N = {
     title:'EDV Sales Performance Dashboard',
     tab_overview:'Overview', tab_vff:'VFF shoes', tab_channels:'By channel', tab_products:'Products & brands', tab_about:'About this data',
     s_summary:'Summary', s_monthly:'Monthly trend by channel group', s_share:'Channel mix',
-    s_monthly_ch:'Monthly trend by channel', s_pay:'Payment methods (all)', s_chdetail:'Channel detail',
+    s_monthly_total:'Monthly sales', s_pay:'Payment methods (all)', s_chdetail:'Channel detail',
     chd_line:'Monthly sales', chd_brand:'Brand mix',
     m_amount:'Amount', m_qty:'Units', m_pairs:'Pairs',
     k_sales:'Sales (ex-VAT)', k_qty:'Units sold', k_orders_aov:'Orders & avg. order', k_aov:'Avg. order (ex-VAT)',
@@ -449,7 +441,6 @@ const I18N = {
     col_pairs:'Pairs', col_color:'Color', col_size:'Size', col_gender:'Gender', col_brand_share:'Share of brand', col_ratio:'Share',
     total:'Total', all_channels:'All channels', all_brands:'All brands', other:'Other',
     note_exvat:'All amounts exclude 7% VAT. Units, orders and avg. order cover goods sales only (service income from BFT excluded).',
-    note_store_split:'Stores are split by divider lines, one per store (K village / Thaniya / Central LP / Cart LP).',
     note_ch_split:'Each group is split by divider lines, one per channel. Hover for the channel breakdown.',
     note_sort:'Click a column header to sort.',
     note_goods:'Goods only (service income from BFT excluded). The donut shows the top 7 brands plus "Others".',
@@ -465,7 +456,7 @@ const I18N = {
     p01:'Sales by brand (all)', p01_share:'Share by brand', p01_break:'Breakdown by brand',
     p02:'Brand mix by channel', p02_note:'Pick a channel to see its brand mix (by sales amount).',
     p03:'Model ranking (all brands, sizes/colors merged)', top10:'Top 10 by sales', worst10:'Bottom 10 by sales',
-    p04:'Sales detail by brand', p05:'V-Soul share by month', p05_note:'V-Soul as a share of VFF brand sales, by month.',
+    p04:'Sales detail by brand', p05:'V-Soul share by month', p05_note:'V-Soul pairs sold by month, and V-Soul as a share of VFF brand sales.', p05_pairs:'V-Soul pairs sold', p05_ratio:'V-Soul share of VFF sales', k_total_amt:'Total sales (ex-VAT)', k_total_qty:'Total units', k_total_orders:'Customers (orders)', col_item:'Item',
     summary_fmt:'Sales {amt} THB · {qty} units · {ord} orders · avg. {aov} THB',
     brand_summary_fmt:'{n} models · sales {amt} THB · {qty} units',
     period_label:'Period', updated:'Data updated', source:'Source',
@@ -479,7 +470,7 @@ const I18N = {
     title:'แดชบอร์ดยอดขาย EDV',
     tab_overview:'ภาพรวม', tab_vff:'รองเท้า VFF', tab_channels:'ตามช่องทาง', tab_products:'สินค้าและแบรนด์', tab_about:'เกี่ยวกับข้อมูลนี้',
     s_summary:'สรุปภาพรวม', s_monthly:'แนวโน้มรายเดือนตามกลุ่มช่องทาง', s_share:'สัดส่วนตามช่องทาง',
-    s_monthly_ch:'แนวโน้มรายเดือนตามช่องทาง', s_pay:'สัดส่วนวิธีชำระเงิน (ทั้งหมด)', s_chdetail:'รายละเอียดแต่ละช่องทาง',
+    s_monthly_total:'ยอดขายรายเดือน', s_pay:'สัดส่วนวิธีชำระเงิน (ทั้งหมด)', s_chdetail:'รายละเอียดแต่ละช่องทาง',
     chd_line:'ยอดขายรายเดือน', chd_brand:'สัดส่วนแบรนด์',
     m_amount:'ยอดเงิน', m_qty:'จำนวนชิ้น', m_pairs:'จำนวนคู่',
     k_sales:'ยอดขาย (ไม่รวม VAT)', k_qty:'จำนวนชิ้นที่ขาย', k_orders_aov:'จำนวนบิลและยอดเฉลี่ย', k_aov:'ยอดเฉลี่ยต่อบิล (ไม่รวม VAT)',
@@ -492,7 +483,6 @@ const I18N = {
     col_pairs:'คู่', col_color:'สี', col_size:'ไซซ์', col_gender:'เพศ', col_brand_share:'สัดส่วนในแบรนด์', col_ratio:'สัดส่วน',
     total:'รวม', all_channels:'ทุกช่องทาง', all_brands:'ทุกแบรนด์', other:'อื่นๆ',
     note_exvat:'ยอดเงินทั้งหมดไม่รวม VAT 7% จำนวนชิ้น บิล และยอดเฉลี่ย นับเฉพาะการขายสินค้า (ไม่รวมรายได้ค่าบริการจาก BFT)',
-    note_store_split:'หน้าร้านแบ่งด้วยเส้นคั่นตามร้าน (K village / Thaniya / Central LP / Cart LP)',
     note_ch_split:'แต่ละกลุ่มแบ่งด้วยเส้นคั่นตามช่องทาง วางเมาส์เพื่อดูรายละเอียด',
     note_sort:'คลิกหัวคอลัมน์เพื่อเรียงลำดับ',
     note_goods:'เฉพาะยอดขายสินค้า (ไม่รวมรายได้ค่าบริการจาก BFT) กราฟโดนัทแสดง 7 แบรนด์แรกและ "อื่นๆ"',
@@ -508,7 +498,7 @@ const I18N = {
     p01:'ยอดขายตามแบรนด์ (ทั้งหมด)', p01_share:'สัดส่วนตามแบรนด์', p01_break:'รายละเอียดตามแบรนด์',
     p02:'สัดส่วนแบรนด์ตามช่องทาง', p02_note:'เลือกช่องทางเพื่อดูสัดส่วนแบรนด์ในช่องทางนั้น (ตามยอดเงิน)',
     p03:'อันดับรุ่น (ทุกแบรนด์ รวมไซซ์/สี)', top10:'ยอดขายสูงสุด 10 อันดับ', worst10:'ยอดขายต่ำสุด 10 อันดับ',
-    p04:'รายละเอียดยอดขายตามแบรนด์', p05:'สัดส่วน V-Soul รายเดือน', p05_note:'สัดส่วนของ V-Soul ในยอดขายแบรนด์ VFF รายเดือน',
+    p04:'รายละเอียดยอดขายตามแบรนด์', p05:'สัดส่วน V-Soul รายเดือน', p05_note:'จำนวนคู่ V-Soul ที่ขายรายเดือน และสัดส่วนของ V-Soul ในยอดขายแบรนด์ VFF', p05_pairs:'จำนวนคู่ V-Soul ที่ขาย', p05_ratio:'สัดส่วน V-Soul ในยอดขาย VFF', k_total_amt:'ยอดขายรวม (ไม่รวม VAT)', k_total_qty:'จำนวนชิ้นรวม', k_total_orders:'จำนวนลูกค้า (บิล)', col_item:'รายการ',
     summary_fmt:'ยอดขาย {amt} บาท · {qty} ชิ้น · {ord} บิล · เฉลี่ย {aov} บาท',
     brand_summary_fmt:'{n} รุ่น · ยอดขาย {amt} บาท · {qty} ชิ้น',
     period_label:'ช่วงเวลา', updated:'อัปเดตข้อมูล', source:'ที่มา',
@@ -567,7 +557,7 @@ const periodMonths = id => (periods().find(p => p.id === id) || periods()[0]).mo
 const periodLabel = id => (periods().find(p => p.id === id) || periods()[0]).label;
 // columns for "show monthly figures" tables: each month, then quarter / half / YTD roll-ups
 const detailCols = () => [...M.map(m => ({ label: mName(m), months: [m], roll: false })),
-  ...periods().filter(p => ['q1', 'q2', 'q3', 'h1', 'all'].includes(p.id)).map(p => ({ label: p.label, months: p.months, roll: true }))];
+  ...['q1', 'q2', 'q3', 'h1', 'all'].map(id => periods().find(p => p.id === id)).filter(Boolean).map(p => ({ label: p.label, months: p.months, roll: true }))];
 
 function chSum(ch, months) { // -> [amt, qty, orders]
   const r = [0, 0, 0];
@@ -784,7 +774,7 @@ function vlegend(items) { // -> html rows with data-k
 
 /* ------------------------------------------------------------------ state + small UI helpers */
 const S = {
-  kpiPeriod: 'all', monthlyMetric: 'amt',
+  kpiPeriod: 'all',
   vffChPeriod: 'all', vffChMetric: 'pairs', vffGPeriod: 'all', vffMPeriod: 'all', vffCPeriod: 'all', vffSPeriod: 'all',
   chMonthlyMetric: 'amt', chtPeriod: 'all', chtSort: { key: 'amt', dir: -1 },
   payChannel: 'all', payPeriod: 'all', chdChannel: 'K village', chdPeriod: 'all',
@@ -863,15 +853,10 @@ function renderSummary() {
     tr.addEventListener('mouseleave', () => linkHighlight($('kpiD0'), $('shareTable'), null));
   });
 
-  // monthly figures: one row per month, then roll-ups
-  detailToggle('sumDetailBtn', 'sumDetail', () => {
-    const line = (label, ms2, cls = '') => { const a = sumCh(CH, ms2), p = sumCh(PRODUCT_CH, ms2);
-      return `<tr class="${cls}"><td>${esc(label)}</td><td>${fmt(a[0])}</td><td>${fmt(p[1])}</td><td>${fmt(p[2])}</td><td>${p[2] ? fmt(p[0] / p[2]) : '–'}</td></tr>`; };
-    let d = `<table><thead><tr><th>${t('col_month')}</th><th>${t('col_amount')}</th><th>${t('col_qty')}</th><th>${t('col_orders')}</th><th>${t('col_aov')}</th></tr></thead><tbody>`;
-    M.forEach(m => { d += line(`${m.slice(0, 4)} ${mName(m)}`, [m]); });
-    periods().filter(p => ['q1', 'q2', 'q3', 'h1', 'all'].includes(p.id)).forEach(p => { d += line(p.label, p.months, p.id === 'all' ? 'total' : 'period'); });
-    return d + '</tbody></table>';
-  });
+  // monthly figures, same shape as the Barefoot dashboard: one row per metric, months across
+  detailToggle('sumDetailBtn', 'sumDetail', () => monthTable(t('col_item'), [
+    { label: t('k_total_amt'), key: 'amt' }, { label: t('k_total_qty'), key: 'qty' }, { label: t('k_total_orders'), key: 'ord' },
+  ], (k, ms2) => (k === 'amt' ? sumCh(CH, ms2)[0] : sumCh(PRODUCT_CH, ms2)[k === 'qty' ? 1 : 2]), { total: false }));
 }
 
 function groupSeries(idx, splitGroups) { // stacked series by group; split groups get one same-colored series per channel
@@ -891,12 +876,11 @@ function monthTip(idx) {
 }
 const groupLegend = gs => gs.map(g => `<span>${sw(GCOLOR(g))}${esc(gName(g))}</span>`).join('');
 
+// overview: total only; the per-channel-group breakdown lives on the channel tab
 function renderMonthly() {
-  const idx = S.monthlyMetric === 'amt' ? 0 : 1, gs = idx ? PRODUCT_GROUPS : GROUPS;
-  $('monthlyLegend').innerHTML = groupLegend(gs);
-  barChart($('monthlyChart'), M, mName, groupSeries(idx, ['store']), monthTip(idx));
-  detailToggle('monthlyDetailBtn', 'monthlyDetail', () =>
-    monthTable(t('col_channel'), (idx ? PRODUCT_CH : CH).map(c => ({ label: chName(c), key: c, color: GCOLOR(GROUP_OF[c]) })), (c, ms) => chSum(c, ms)[idx]));
+  const vals = M.map(m => sumCh(CH, [m])[0]);
+  barChart($('monthlyChart'), M, mName, [{ color: 'var(--accent)', values: vals }],
+    i => `<div class="t">${esc(M[i].slice(0, 4) + ' ' + mName(M[i]))}</div><div class="r"><span>${t('k_total_amt')}</span><span>${fmt(vals[i])} ${t('unit_thb')}</span></div>`);
 }
 
 /* ================================================================== VFF shoes */
@@ -1095,9 +1079,12 @@ function renderBrandDetail() {
   more.textContent = S.bdShowAll ? t('less') : `${t('more')} (${list.length - 15})`;
 }
 function renderVSoul() {
-  const vals = M.map(m => { const mm = DATA.model[m] || {}; let vff = 0, vs = 0;
-    for (const k in mm) { const [b, mod] = k.split('\t'); if (b !== 'VFF') continue; vff += mm[k][0]; if (mod === 'VFF V-Soul') vs += mm[k][0]; }
-    return { vff, vs, r: vff ? vs / vff * 100 : 0 }; });
+  const vals = M.map(m => { const mm = DATA.model[m] || {}; let vff = 0, vs = 0, pairs = 0;
+    for (const k in mm) { const [b, mod] = k.split('\t'); if (b !== 'VFF') continue; vff += mm[k][0]; if (mod === 'VFF V-Soul') { vs += mm[k][0]; pairs += mm[k][1]; } }
+    return { vff, vs, pairs, r: vff ? vs / vff * 100 : 0 }; });
+  // pairs and share are different scales, so two charts side by side rather than one dual-axis chart
+  barChart($('vsBar'), M, mName, [{ color: 'var(--g-store)', values: vals.map(v => v.pairs) }],
+    i => `<div class="t">${esc(M[i].slice(0, 4) + ' ' + mName(M[i]))}</div><div class="r"><span>V-Soul</span><span>${fmt(vals[i].pairs)} ${t('unit_pairs')}</span></div><div class="r"><span>${t('col_amount')}</span><span>${fmt(vals[i].vs)}</span></div>`);
   lineChart($('vsLine'), M, vals.map(v => v.r), 'var(--g-store)', i => `<div class="t">${esc(M[i].slice(0, 4) + ' ' + mName(M[i]))}</div><div class="r"><span>V-Soul</span><span>${vals[i].r.toFixed(1)}%</span></div><div class="r"><span>V-Soul</span><span>${fmt(vals[i].vs)} ${t('unit_thb')}</span></div><div class="r"><span>VFF</span><span>${fmt(vals[i].vff)} ${t('unit_thb')}</span></div>`, v => v + '%');
 }
 
@@ -1235,8 +1222,6 @@ function renderAll() {
 
 bindSelect('kpiPeriod', 'kpiPeriod', renderSummary);
 bindToggle('sumDetailBtn', renderSummary);
-bindSeg('monthlyMetric', 'monthlyMetric', renderMonthly);
-bindToggle('monthlyDetailBtn', renderMonthly);
 
 bindToggle('vffStoreBtn', renderVffStore);
 bindSeg('vffChMetric', 'vffChMetric', renderVffChannel);
