@@ -27,8 +27,9 @@ from pathlib import Path
 import openpyxl
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_SRC = ROOT / 'data' / 'raw' / 'order_detail_202609261433_u4ll.xlsx'  # gitignored; Downloads gets cleaned
-SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_SRC
+# Every export in data/raw/ (gitignored; Downloads gets cleaned) is read and combined:
+# one file per period, e.g. Jan-Aug then a monthly file each month after.
+SRCS = [Path(a) for a in sys.argv[1:]] or sorted((ROOT / 'data' / 'raw').glob('order_detail_*.xlsx'))
 OUT = ROOT / 'data' / 'records.json'
 
 BFT_CUSTOMER_MARK = 'แบร์ฟุต'  # "บริษัท แบร์ฟุตอิงค์ (ไทยแลนด์) จำกัด"
@@ -69,6 +70,7 @@ BRAND_PREFIX = {
     'VFF': 'VFF', 'CP': 'Coolcore', 'CC': 'Coolcore', 'OLN': 'Oleno', 'BFJ': 'BFJ',
     'MTB': 'TabiRela', 'TBO': 'Tabio', 'KC': 'Tabio', 'SW': 'Swans', 'KA': 'Knockaround',
     'VV': 'Vivo', 'KK': 'Klean Kanteen', 'LN': 'LUNA', 'AQ': 'AQOZ', 'IS': 'Others',
+    'KE': 'KEEN',
 }
 
 
@@ -137,8 +139,10 @@ def classify_channel(wh, ch, order_no, d):
     order_no = str(order_no)
     if ch in ONLINE_CHANNELS:
         return ONLINE_CHANNELS[ch]
-    if not ch and order_no.startswith('TX'):
-        return 'Online'  # online order fulfilled from whichever warehouse had stock
+    if not ch and order_no.startswith(('TX', 'TIV')):
+        # online order fulfilled from whichever warehouse had stock; TIV- (from Sep 2026)
+        # is the tax-invoice series for direct transfer-paid sales, often with no branch at all
+        return 'Online'
     if wh == 'CART Central LP' and (order_no.startswith(CART_EVENT_SERIES) or
                                     (order_no.startswith('RV') and CART_EVENT_DAYS[0] <= d <= CART_EVENT_DAYS[1])):
         return 'Event'
@@ -154,15 +158,30 @@ def classify_channel(wh, ch, order_no, d):
     return 'Consignment Other'
 
 
-def main():
-    wb = openpyxl.load_workbook(SRC, read_only=True, data_only=True)
+def read_export(path):
+    """-> list of row dicts keyed by header name (columns are looked up by name, never position)."""
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     rows = list(wb['Orders'].iter_rows(values_only=True))
     header = rows[1]  # row 0 is the Orders/Payments/Product data group banner
     ix = {h: i for i, h in enumerate(header) if h}
-    data = [r for r in rows[2:] if r[ix['Type']] == 'Sell']  # drops blank + 2 footer rows
+    return [{k: r[i] for k, i in ix.items()} for r in rows[2:] if r[ix['Type']] == 'Sell']  # drops blank + footer rows
+
+
+def main():
+    assert SRCS, 'no order_detail_*.xlsx in data/raw/'
+    data, seen = [], {}
+    for path in SRCS:
+        rows = read_export(path)
+        months = {parse_dmy(r['Date']).strftime('%Y-%m') for r in rows if r['Date']}
+        # the same month in two exports would double-count it; replace the older file instead
+        clash = {m: seen[m] for m in months if m in seen}
+        assert not clash, f'{path.name} repeats months already loaded from {clash}'
+        seen.update({m: path.name for m in months})
+        data += rows
+        print(f'read {path.name}: {len(rows)} rows, {min(months)}..{max(months)}')
 
     def g(r, k):
-        return r[ix[k]]
+        return r[k]
 
     # order-level: summed product-line total, and the order's Amount (first line only)
     orders = defaultdict(lambda: {'lines': [], 'line_total': 0.0, 'amount': None, 'payments': []})
@@ -251,7 +270,7 @@ def main():
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     meta = {
-        'source_file': SRC.name,
+        'source_file': ' + '.join(p.name for p in SRCS),
         'excluded_vat_incl': {k: round(v, 2) for k, v in excluded.items()},
         'included_vat_incl': {k: round(v, 2) for k, v in included.items()},
         'kept_line_total_vat_incl': round(stats['kept_line_total'], 2),

@@ -12,7 +12,7 @@ Endeavors Co., Ltd.(EDV)の売上実績。EDV の収入表(Before Vat)を正と�
 ## 更新手順
 
 ```
-python scripts/etl.py "<path>/order_detail_xxxx.xlsx"   # 省略時は data/raw/ のファイル
+python scripts/etl.py   # data/raw/ の order_detail_*.xlsx をすべて読み込んで結合(同じ月が2ファイルにあるとエラー)
 python scripts/aggregate.py
 python scripts/build.py
 ```
@@ -25,7 +25,7 @@ python scripts/build.py
   - Consignment Other: 委託先への請求書+本社倉庫からの法人・個人請求(1〜6月の Barefoot Inc. への商品請求を含む)
   - Marketing BFT / Commission / Car rent: 商品コード MKT / CMS / CCR の BFT 宛請求。8月の BFT への商品請求は収入表に合わせて Marketing BFT。点数・伝票数・客単価・ブランド分析からは除外
 - 除外: Voided、EDV 収入表に無い請求書(etl.py の SHEET_EXCLUDED_INVOICES)
-- 正: EDV の収入表(Before Vat)。全12列+Total が月別で一致することを確認済み(2026-09-28、合計 18,889,538.59)
+- 正: EDV の収入表(Before Vat)。全12列+Total が月別で一致することを確認済み(2026-09-28 時点の1〜8月、合計 18,889,538.59)。9月以降は収入表が届き次第突き合わせる
 - 金額は注文の `Amount`(注文単位値引き後の実請求額)を明細行の金額比で按分。VAT 7% は `aggregate.py` の `ser()` で1回だけ除算
 - 注文番号は店舗間で重複することがあるため、注文番号+倉庫+チャネル+日付で1伝票
 - 検算: 計上分+除外分 = 元ファイルの `Amount` 合計(Voided除く)と一致すること
