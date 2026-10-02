@@ -40,10 +40,11 @@ h1{margin:0;font-size:28px;font-weight:700;}
 .period{font-family:var(--mono);color:var(--ink-dim);font-size:13px;line-height:1.7;margin:6px 0 22px;}
 .period b{color:var(--ink);}
 .lang-toggle{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;}
-.head-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
-.global-period{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-dim);}
-.global-period select{border-color:var(--accent);font-weight:600;}
-@media (max-width:560px){.head-right{align-items:flex-start;}}
+/* same control as the Barefoot dashboard: one period for every block, right under the language switch */
+.head-right{display:flex;flex-direction:column;align-items:stretch;gap:10px;}
+.global-period-ctrl{display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);}
+.global-period-ctrl select{border:1px solid var(--accent);color:var(--accent);font-weight:700;}
+.page-foot{margin:6px 0 0;padding-top:14px;border-top:1px solid var(--line);}
 .lang-btn{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink-dim);background:transparent;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;}
 .lang-btn:hover{color:var(--ink);}
 .lang-btn.active{background:var(--accent);color:#16241C;}
@@ -160,10 +161,9 @@ th .arrow{color:var(--accent);}
         <button class="lang-btn" data-lang="en">English</button>
         <button class="lang-btn" data-lang="th">ไทย</button>
       </div>
-      <label class="global-period"><span data-i18n="global_period"></span><select id="globalPeriod"></select></label>
+      <div class="global-period-ctrl"><label for="globalPeriod" data-i18n="global_period"></label><select id="globalPeriod"></select></div>
     </div>
   </header>
-  <div class="period" id="periodLine"></div>
 
   <nav class="tabs" role="tablist">
     <button data-tab="overview" class="active" data-i18n="tab_overview"></button>
@@ -388,6 +388,7 @@ th .arrow{color:var(--accent);}
   <div class="tab" id="tab-about">
     <section class="card about" id="about"></section>
   </div>
+  <div class="period page-foot" id="periodLine"></div>
 </div>
 <div class="tip" id="tip"></div>
 
@@ -398,7 +399,7 @@ const DATA = /*__DATA__*/null;
 const I18N = {
   ja: {
     title:'EDV 販売実績ダッシュボード',
-    global_period:'全体の期間', view_label:'表示期間',
+    global_period:'全ブロックの期間をまとめて変更:', view_label:'表示期間',
     tab_overview:'全体', tab_vff:'VFFシューズ', tab_channels:'チャネル別', tab_products:'商品・ブランド別', tab_about:'このデータについて',
     s_summary:'全体サマリー', s_monthly:'月次推移(チャネル区分別)', s_share:'チャネル別構成',
     s_monthly_total:'月別売上金額', s_pay:'決済方法別比率(店舗・イベント)', s_chdetail:'チャネルごとの詳細',
@@ -441,7 +442,7 @@ const I18N = {
   },
   en: {
     title:'EDV Sales Performance Dashboard',
-    global_period:'Period (all sections)', view_label:'Showing',
+    global_period:'Change period for all blocks:', view_label:'Showing',
     tab_overview:'Overview', tab_vff:'VFF shoes', tab_channels:'By channel', tab_products:'Products & brands', tab_about:'About this data',
     s_summary:'Summary', s_monthly:'Monthly trend by channel group', s_share:'Channel mix',
     s_monthly_total:'Monthly sales', s_pay:'Payment methods (stores & events)', s_chdetail:'Channel detail',
@@ -484,7 +485,7 @@ const I18N = {
   },
   th: {
     title:'แดชบอร์ดยอดขาย EDV',
-    global_period:'ช่วงเวลา (ทุกส่วน)', view_label:'แสดง',
+    global_period:'เปลี่ยนช่วงเวลาของทุกบล็อกพร้อมกัน:', view_label:'แสดง',
     tab_overview:'ภาพรวม', tab_vff:'รองเท้า VFF', tab_channels:'ตามช่องทาง', tab_products:'สินค้าและแบรนด์', tab_about:'เกี่ยวกับข้อมูลนี้',
     s_summary:'สรุปภาพรวม', s_monthly:'แนวโน้มรายเดือนตามกลุ่มช่องทาง', s_share:'สัดส่วนตามช่องทาง',
     s_monthly_total:'ยอดขายรายเดือน', s_pay:'สัดส่วนวิธีชำระเงิน (หน้าร้านและอีเวนต์)', s_chdetail:'รายละเอียดแต่ละช่องทาง',
