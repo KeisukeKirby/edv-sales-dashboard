@@ -434,7 +434,7 @@ const I18N = {
     summary_fmt:'売上 {amt} THB · {qty} 点 · {ord} 件 · 客単価 {aov} THB',
     brand_summary_fmt:'{n} モデル · 売上 {amt} THB · {qty} 点',
     period_label:'対象期間', updated:'データ更新', source:'出典',
-    p_all:'累計', p_h1:'上期(1〜6月)', p_q1:'Q1(1〜3月)', p_q2:'Q2(4〜6月)', p_q3:'Q3',
+    p_all:'{yy}年暫定', p_h1:'半期(H1)',
     g_store:'実店舗', g_online:'オンライン', g_event:'イベント', g_consignment:'委託・法人', g_service:'BFT向けサービス', excl_service:'BFT向けサービス収入を除く',
     ch_Online:'Online(SNS・直販)', 'ch_Consignment Other':'Consignment Other(委託・法人)', 'ch_Marketing BFT':'Marketing BFT(マーケティング)', ch_Commission:'Commission(販売手数料)', 'ch_Car rent':'Car rent(車両賃貸)', ch_Event:'イベント',
     b_Others:'その他', metric_amt:'金額', metric_qty:'数量',
@@ -477,7 +477,7 @@ const I18N = {
     summary_fmt:'Sales {amt} THB · {qty} units · {ord} orders · avg. {aov} THB',
     brand_summary_fmt:'{n} models · sales {amt} THB · {qty} units',
     period_label:'Period', updated:'Data updated', source:'Source',
-    p_all:'YTD', p_h1:'H1 (Jan–Jun)', p_q1:'Q1 (Jan–Mar)', p_q2:'Q2 (Apr–Jun)', p_q3:'Q3',
+    p_all:'{yyyy} YTD (provisional)', p_h1:'Half (H1)',
     g_store:'Stores', g_online:'Online', g_event:'Events', g_consignment:'Consignment/B2B', g_service:'Services to BFT', excl_service:'Excludes service income from BFT',
     ch_Online:'Online (social/direct)', 'ch_Consignment Other':'Consignment Other (consignment/B2B)', 'ch_Marketing BFT':'Marketing BFT', ch_Commission:'Commission', 'ch_Car rent':'Car rent', ch_Event:'Event',
     b_Others:'Others', metric_amt:'Amount', metric_qty:'Units',
@@ -520,7 +520,7 @@ const I18N = {
     summary_fmt:'ยอดขาย {amt} บาท · {qty} ชิ้น · {ord} บิล · เฉลี่ย {aov} บาท',
     brand_summary_fmt:'{n} รุ่น · ยอดขาย {amt} บาท · {qty} ชิ้น',
     period_label:'ช่วงเวลา', updated:'อัปเดตข้อมูล', source:'ที่มา',
-    p_all:'สะสม', p_h1:'ครึ่งปีแรก (ม.ค.–มิ.ย.)', p_q1:'Q1 (ม.ค.–มี.ค.)', p_q2:'Q2 (เม.ย.–มิ.ย.)', p_q3:'Q3',
+    p_all:'ปี {yyyy} (ชั่วคราว)', p_h1:'ครึ่งปี (H1)',
     g_store:'หน้าร้าน', g_online:'ออนไลน์', g_event:'อีเวนต์', g_consignment:'ฝากขาย/นิติบุคคล', g_service:'บริการให้ BFT', excl_service:'ไม่รวมรายได้ค่าบริการจาก BFT',
     ch_Online:'ออนไลน์ (โซเชียล/ขายตรง)', 'ch_Consignment Other':'Consignment Other (ฝากขาย/นิติบุคคล)', 'ch_Marketing BFT':'Marketing BFT (การตลาด)', ch_Commission:'Commission (ค่าคอมมิชชั่น)', 'ch_Car rent':'Car rent (ค่าเช่ารถ)', ch_Event:'อีเวนต์',
     b_Others:'อื่นๆ', metric_amt:'ยอดเงิน', metric_qty:'จำนวน',
@@ -561,27 +561,26 @@ const GENDER_COLOR = { W: '#d55181', M: '#3987e5', U: '#c98500' };
 const PAY_METHODS = ['card', 'transfer', 'cash', 'marketplace', 'other'];
 const PAY_COLOR = { card: '#3987e5', transfer: '#d95926', cash: '#199e70', marketplace: '#c98500', other: GRAY };
 
+// option order follows the Barefoot dashboard: months, quarters, half (H1), then the year so far
 function periods() {
-  const ps = [{ id: 'all', months: M, label: `${t('p_all')} (${mName(M[0])}–${mName(M[M.length - 1])})` }];
+  const ps = [];
   const q = ids => M.filter(m => ids.includes(+m.slice(5)));
   const add = (id, ms, label) => { if (ms.length) ps.push({ id, months: ms, label }); };
+  M.forEach(m => add(m, [m], mName(m)));
+  [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]].forEach((qs, i) => add('q' + (i + 1), q(qs), 'Q' + (i + 1)));
   if (q([1, 2, 3, 4, 5, 6]).length === 6) add('h1', q([1, 2, 3, 4, 5, 6]), t('p_h1'));
-  if (q([1, 2, 3]).length === 3) add('q1', q([1, 2, 3]), t('p_q1'));
-  if (q([4, 5, 6]).length === 3) add('q2', q([4, 5, 6]), t('p_q2'));
-  const q3 = q([7, 8, 9]);
-  if (q3.length) add('q3', q3, `${t('p_q3')} (${mName(q3[0])}–${mName(q3[q3.length - 1])})`);
-  M.slice().reverse().forEach(m => add(m, [m], `${m.slice(0, 4)} ${mName(m)}`));
+  add('all', M, tf('p_all', { yy: M[0].slice(2, 4), yyyy: M[0].slice(0, 4) }));
   return ps;
 }
-const periodMonths = id => (periods().find(p => p.id === id) || periods()[0]).months;
+const periodMonths = id => (periods().find(p => p.id === id) || periods().find(p => p.id === 'all')).months;
 // MV = months on every month axis (charts, detail tables); set only by the header's global period
 let MV = M;
-const periodLabel = id => (periods().find(p => p.id === id) || periods()[0]).label;
+const periodLabel = id => (periods().find(p => p.id === id) || periods().find(p => p.id === 'all')).label;
 // columns for "show monthly figures" tables: each month, then quarter / half / YTD roll-ups
 // roll-ups are kept only when they sit inside the global period, plus the global period itself
 const detailCols = () => {
   const inView = p => p.months.length > 1 && p.months.every(m => MV.includes(m));
-  const rolls = ['q1', 'q2', 'q3', 'h1', 'all'].map(id => periods().find(p => p.id === id)).filter(p => p && inView(p));
+  const rolls = ['q1', 'q2', 'q3', 'q4', 'h1', 'all'].map(id => periods().find(p => p.id === id)).filter(p => p && inView(p));
   const g = periods().find(p => p.id === S.globalPeriod);
   if (g && g.months.length > 1 && !rolls.some(p => p.id === g.id)) rolls.push(g);
   return [...MV.map(m => ({ label: mName(m), months: [m], roll: false })), ...rolls.map(p => ({ label: p.label, months: p.months, roll: true }))];
