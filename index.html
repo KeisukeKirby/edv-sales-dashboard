@@ -40,6 +40,10 @@ h1{margin:0;font-size:28px;font-weight:700;}
 .period{font-family:var(--mono);color:var(--ink-dim);font-size:13px;line-height:1.7;margin:6px 0 22px;}
 .period b{color:var(--ink);}
 .lang-toggle{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;}
+.head-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
+.global-period{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-dim);}
+.global-period select{border-color:var(--accent);font-weight:600;}
+@media (max-width:560px){.head-right{align-items:flex-start;}}
 .lang-btn{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink-dim);background:transparent;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;}
 .lang-btn:hover{color:var(--ink);}
 .lang-btn.active{background:var(--accent);color:#16241C;}
@@ -150,10 +154,13 @@ th .arrow{color:var(--accent);}
       <div class="eyebrow">Endeavors Co., Ltd. · EDV</div>
       <h1 data-i18n="title"></h1>
     </div>
-    <div class="lang-toggle" role="group" aria-label="Language">
-      <button class="lang-btn" data-lang="ja">日本語</button>
-      <button class="lang-btn" data-lang="en">English</button>
-      <button class="lang-btn" data-lang="th">ไทย</button>
+    <div class="head-right">
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button class="lang-btn" data-lang="ja">日本語</button>
+        <button class="lang-btn" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="th">ไทย</button>
+      </div>
+      <label class="global-period"><span data-i18n="global_period"></span><select id="globalPeriod"></select></label>
     </div>
   </header>
   <div class="period" id="periodLine"></div>
@@ -391,6 +398,7 @@ const DATA = {"generated_at":"2026-10-02 09:09","source_file":"order_detail_2026
 const I18N = {
   ja: {
     title:'EDV 販売実績ダッシュボード',
+    global_period:'全体の期間', view_label:'表示期間',
     tab_overview:'全体', tab_vff:'VFFシューズ', tab_channels:'チャネル別', tab_products:'商品・ブランド別', tab_about:'このデータについて',
     s_summary:'全体サマリー', s_monthly:'月次推移(チャネル区分別)', s_share:'チャネル別構成',
     s_monthly_total:'月別売上金額', s_pay:'決済方法別比率(店舗・イベント)', s_chdetail:'チャネルごとの詳細',
@@ -433,6 +441,7 @@ const I18N = {
   },
   en: {
     title:'EDV Sales Performance Dashboard',
+    global_period:'Period (all sections)', view_label:'Showing',
     tab_overview:'Overview', tab_vff:'VFF shoes', tab_channels:'By channel', tab_products:'Products & brands', tab_about:'About this data',
     s_summary:'Summary', s_monthly:'Monthly trend by channel group', s_share:'Channel mix',
     s_monthly_total:'Monthly sales', s_pay:'Payment methods (stores & events)', s_chdetail:'Channel detail',
@@ -475,6 +484,7 @@ const I18N = {
   },
   th: {
     title:'แดชบอร์ดยอดขาย EDV',
+    global_period:'ช่วงเวลา (ทุกส่วน)', view_label:'แสดง',
     tab_overview:'ภาพรวม', tab_vff:'รองเท้า VFF', tab_channels:'ตามช่องทาง', tab_products:'สินค้าและแบรนด์', tab_about:'เกี่ยวกับข้อมูลนี้',
     s_summary:'สรุปภาพรวม', s_monthly:'แนวโน้มรายเดือนตามกลุ่มช่องทาง', s_share:'สัดส่วนตามช่องทาง',
     s_monthly_total:'ยอดขายรายเดือน', s_pay:'สัดส่วนวิธีชำระเงิน (หน้าร้านและอีเวนต์)', s_chdetail:'รายละเอียดแต่ละช่องทาง',
@@ -563,10 +573,18 @@ function periods() {
   return ps;
 }
 const periodMonths = id => (periods().find(p => p.id === id) || periods()[0]).months;
+// MV = months on every month axis (charts, detail tables); set only by the header's global period
+let MV = M;
 const periodLabel = id => (periods().find(p => p.id === id) || periods()[0]).label;
 // columns for "show monthly figures" tables: each month, then quarter / half / YTD roll-ups
-const detailCols = () => [...M.map(m => ({ label: mName(m), months: [m], roll: false })),
-  ...['q1', 'q2', 'q3', 'h1', 'all'].map(id => periods().find(p => p.id === id)).filter(Boolean).map(p => ({ label: p.label, months: p.months, roll: true }))];
+// roll-ups are kept only when they sit inside the global period, plus the global period itself
+const detailCols = () => {
+  const inView = p => p.months.length > 1 && p.months.every(m => MV.includes(m));
+  const rolls = ['q1', 'q2', 'q3', 'h1', 'all'].map(id => periods().find(p => p.id === id)).filter(p => p && inView(p));
+  const g = periods().find(p => p.id === S.globalPeriod);
+  if (g && g.months.length > 1 && !rolls.some(p => p.id === g.id)) rolls.push(g);
+  return [...MV.map(m => ({ label: mName(m), months: [m], roll: false })), ...rolls.map(p => ({ label: p.label, months: p.months, roll: true }))];
+};
 
 function chSum(ch, months) { // -> [amt, qty, orders]
   const r = [0, 0, 0];
@@ -783,7 +801,7 @@ function vlegend(items) { // -> html rows with data-k
 
 /* ------------------------------------------------------------------ state + small UI helpers */
 const S = {
-  kpiPeriod: 'all', sharePeriod: 'all',
+  globalPeriod: 'all', kpiPeriod: 'all', sharePeriod: 'all',
   vffChPeriod: 'all', vffChMetric: 'pairs', vffGPeriod: 'all', vffMPeriod: 'all', vffCPeriod: 'all', vffSPeriod: 'all',
   chMonthlyMetric: 'amt', chtPeriod: 'all', chtSort: { key: 'amt', dir: -1 },
   payChannel: 'all', payPeriod: 'all', chdChannel: 'K village', chdPeriod: 'all',
@@ -874,13 +892,13 @@ function groupSeries(idx, splitGroups) { // stacked series by group; split group
   const out = [];
   GROUPS.forEach(g => {
     const chs = CH.filter(c => GROUP_OF[c] === g);
-    if (splitGroups.includes(g)) chs.forEach(c => out.push({ color: GCOLOR(g), values: M.map(m => DATA.ch[c]?.[m]?.[idx] || 0) }));
-    else out.push({ color: GCOLOR(g), values: M.map(m => chs.reduce((s, c) => s + (DATA.ch[c]?.[m]?.[idx] || 0), 0)) });
+    if (splitGroups.includes(g)) chs.forEach(c => out.push({ color: GCOLOR(g), values: MV.map(m => DATA.ch[c]?.[m]?.[idx] || 0) }));
+    else out.push({ color: GCOLOR(g), values: MV.map(m => chs.reduce((s, c) => s + (DATA.ch[c]?.[m]?.[idx] || 0), 0)) });
   });
   return out;
 }
 function monthTip(idx) {
-  return i => { const m = M[i], rows = CH.map(c => [c, DATA.ch[c]?.[m]?.[idx] || 0]).filter(r => r[1] > 0);
+  return i => { const m = MV[i], rows = CH.map(c => [c, DATA.ch[c]?.[m]?.[idx] || 0]).filter(r => r[1] > 0);
     const tot = rows.reduce((s, r) => s + r[1], 0);
     return `<div class="t">${esc(m.slice(0, 4) + ' ' + mName(m))} · ${fmt(tot)} ${idx ? t('unit_pcs') : t('unit_thb')}</div>` +
       rows.map(([c, v]) => `<div class="r"><span>${sw(GCOLOR(GROUP_OF[c]))}${esc(chName(c))}</span><span>${fmt(v)}</span></div>`).join(''); };
@@ -889,20 +907,20 @@ const groupLegend = gs => gs.map(g => `<span>${sw(GCOLOR(g))}${esc(gName(g))}</s
 
 // overview: total only; the per-channel-group breakdown lives on the channel tab
 function renderMonthly() {
-  const vals = M.map(m => sumCh(CH, [m])[0]);
-  barChart($('monthlyChart'), M, mName, [{ color: 'var(--accent)', values: vals }],
-    i => `<div class="t">${esc(M[i].slice(0, 4) + ' ' + mName(M[i]))}</div><div class="r"><span>${t('k_total_amt')}</span><span>${fmt(vals[i])} ${t('unit_thb')}</span></div>`);
+  const vals = MV.map(m => sumCh(CH, [m])[0]);
+  barChart($('monthlyChart'), MV, mName, [{ color: 'var(--accent)', values: vals }],
+    i => `<div class="t">${esc(MV[i].slice(0, 4) + ' ' + mName(MV[i]))}</div><div class="r"><span>${t('k_total_amt')}</span><span>${fmt(vals[i])} ${t('unit_thb')}</span></div>`);
 }
 
 /* ================================================================== VFF shoes */
 function renderVffStore() {
   const keys = [...VFF_TOP_CH, ...(VFF_CH_RANK.length > VFF_TOP_CH.length ? ['__other'] : [])];
   const byMC = vffBy(DATA.vff, r => r[0] + '|' + vffChKey(r[1]));
-  const series = keys.map(k => ({ color: vffChColor(k), values: M.map(m => byMC.get(m + '|' + k)?.[0] || 0) }));
+  const series = keys.map(k => ({ color: vffChColor(k), values: MV.map(m => byMC.get(m + '|' + k)?.[0] || 0) }));
   $('vffStoreLegend').innerHTML = keys.map(k => `<span>${sw(vffChColor(k))}${esc(vffChName(k))}</span>`).join('');
-  barChart($('vffStoreChart'), M, mName, series, i => {
+  barChart($('vffStoreChart'), MV, mName, series, i => {
     const rows = keys.map((k, j) => [k, series[j].values[i]]).filter(r => r[1] > 0), tot = rows.reduce((s, r) => s + r[1], 0);
-    return `<div class="t">${esc(M[i].slice(0, 4) + ' ' + mName(M[i]))} · ${fmt(tot)} ${t('unit_pairs')}</div>` +
+    return `<div class="t">${esc(MV[i].slice(0, 4) + ' ' + mName(MV[i]))} · ${fmt(tot)} ${t('unit_pairs')}</div>` +
       rows.map(([k, v]) => `<div class="r"><span>${sw(vffChColor(k))}${esc(vffChName(k))}</span><span>${fmt(v)}</span></div>`).join('');
   });
   detailToggle('vffStoreBtn', 'vffStoreDetail', () => {
@@ -988,7 +1006,7 @@ function renderVffSizes() {
 function renderChMonthly() {
   const idx = S.chMonthlyMetric === 'amt' ? 0 : 1, gs = idx ? PRODUCT_GROUPS : GROUPS;
   $('chMonthlyLegend').innerHTML = groupLegend(gs);
-  barChart($('chMonthlyChart'), M, mName, groupSeries(idx, GROUPS), monthTip(idx));
+  barChart($('chMonthlyChart'), MV, mName, groupSeries(idx, GROUPS), monthTip(idx));
   detailToggle('chDetailBtn', 'chDetail', () =>
     monthTable(t('col_channel'), (idx ? PRODUCT_CH : CH).map(c => ({ label: chName(c), key: c, color: GCOLOR(GROUP_OF[c]) })), (c, ms) => chSum(c, ms)[idx]));
   detailToggle('chQtyBtn', 'chQty', null, 'qty_detail', 'qty_detail_hide');
@@ -1029,8 +1047,8 @@ function renderPay() {
 function renderChDetail() {
   const c = S.chdChannel, ms = periodMonths(S.chdPeriod), col = GCOLOR(GROUP_OF[c]), s = chSum(c, ms), svc = GROUP_OF[c] === 'service';
   $('chdSummary').textContent = svc ? `${t('col_amount')} ${fmt(s[0])} ${t('unit_thb')}` : tf('summary_fmt', { amt: fmt(s[0]), qty: fmt(s[1]), ord: fmt(s[2]), aov: s[2] ? fmt(s[0] / s[2]) : '–' });
-  lineChart($('chdLine'), M, M.map(m => DATA.ch[c]?.[m]?.[0] || 0), col, i => { const v = DATA.ch[c]?.[M[i]] || [0, 0, 0];
-    return `<div class="t">${esc(chName(c))} · ${esc(M[i].slice(0, 4) + ' ' + mName(M[i]))}</div><div class="r"><span>${t('col_amount')}</span><span>${fmt(v[0])}</span></div>` +
+  lineChart($('chdLine'), MV, MV.map(m => DATA.ch[c]?.[m]?.[0] || 0), col, i => { const v = DATA.ch[c]?.[MV[i]] || [0, 0, 0];
+    return `<div class="t">${esc(chName(c))} · ${esc(MV[i].slice(0, 4) + ' ' + mName(MV[i]))}</div><div class="r"><span>${t('col_amount')}</span><span>${fmt(v[0])}</span></div>` +
       (svc ? '' : `<div class="r"><span>${t('col_qty')}</span><span>${fmt(v[1])}</span></div><div class="r"><span>${t('col_orders')}</span><span>${fmt(v[2])}</span></div>`); });
   const bs = {};
   ms.forEach(m => { const bb = DATA.ch_brand[c]?.[m] || {}; for (const b in bb) bs[b] = (bs[b] || 0) + bb[b][0]; });
@@ -1090,13 +1108,13 @@ function renderBrandDetail() {
   more.textContent = S.bdShowAll ? t('less') : `${t('more')} (${list.length - 15})`;
 }
 function renderVSoul() {
-  const vals = M.map(m => { const mm = DATA.model[m] || {}; let vff = 0, vs = 0, pairs = 0;
+  const vals = MV.map(m => { const mm = DATA.model[m] || {}; let vff = 0, vs = 0, pairs = 0;
     for (const k in mm) { const [b, mod] = k.split('\t'); if (b !== 'VFF') continue; vff += mm[k][0]; if (mod === 'VFF V-Soul') { vs += mm[k][0]; pairs += mm[k][1]; } }
     return { vff, vs, pairs, r: vff ? vs / vff * 100 : 0 }; });
   // pairs and share are different scales, so two charts side by side rather than one dual-axis chart
-  barChart($('vsBar'), M, mName, [{ color: 'var(--g-store)', values: vals.map(v => v.pairs) }],
-    i => `<div class="t">${esc(M[i].slice(0, 4) + ' ' + mName(M[i]))}</div><div class="r"><span>V-Soul</span><span>${fmt(vals[i].pairs)} ${t('unit_pairs')}</span></div><div class="r"><span>${t('col_amount')}</span><span>${fmt(vals[i].vs)}</span></div>`);
-  lineChart($('vsLine'), M, vals.map(v => v.r), 'var(--g-store)', i => `<div class="t">${esc(M[i].slice(0, 4) + ' ' + mName(M[i]))}</div><div class="r"><span>V-Soul</span><span>${vals[i].r.toFixed(1)}%</span></div><div class="r"><span>V-Soul</span><span>${fmt(vals[i].vs)} ${t('unit_thb')}</span></div><div class="r"><span>VFF</span><span>${fmt(vals[i].vff)} ${t('unit_thb')}</span></div>`, v => v + '%');
+  barChart($('vsBar'), MV, mName, [{ color: 'var(--g-store)', values: vals.map(v => v.pairs) }],
+    i => `<div class="t">${esc(MV[i].slice(0, 4) + ' ' + mName(MV[i]))}</div><div class="r"><span>V-Soul</span><span>${fmt(vals[i].pairs)} ${t('unit_pairs')}</span></div><div class="r"><span>${t('col_amount')}</span><span>${fmt(vals[i].vs)}</span></div>`);
+  lineChart($('vsLine'), MV, vals.map(v => v.r), 'var(--g-store)', i => `<div class="t">${esc(MV[i].slice(0, 4) + ' ' + mName(MV[i]))}</div><div class="r"><span>V-Soul</span><span>${vals[i].r.toFixed(1)}%</span></div><div class="r"><span>V-Soul</span><span>${fmt(vals[i].vs)} ${t('unit_thb')}</span></div><div class="r"><span>VFF</span><span>${fmt(vals[i].vff)} ${t('unit_thb')}</span></div>`, v => v + '%');
 }
 
 /* ------------------------------------------------------------------ about */
@@ -1210,6 +1228,8 @@ const ABOUT_EXTRA = {
 };
 
 /* ------------------------------------------------------------------ wiring */
+// every per-section period dropdown (state key == select id); the global one overrides them all
+const PERIOD_KEYS = ['kpiPeriod', 'sharePeriod', 'vffChPeriod', 'vffGPeriod', 'vffMPeriod', 'vffCPeriod', 'vffSPeriod', 'chtPeriod', 'payPeriod', 'chdPeriod', 'brPeriod', 'cbPeriod', 'rkPeriod', 'bdPeriod'];
 const RENDERERS = [renderSummary, renderMonthly, renderVffStore, renderVffChannel, renderVffGender, renderVffModels, renderVffColors, renderVffSizes,
   renderChMonthly, renderShare, renderPay, renderChDetail, renderBrand, renderChannelBrand, renderRanking, renderBrandDetail, renderVSoul];
 function renderAll() {
@@ -1218,10 +1238,11 @@ function renderAll() {
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === LANG));
   $('periodLine').innerHTML =
-    `${t('period_label')}: <b>${M[0].slice(0, 4)} ${esc(mName(M[0]))} – ${esc(mName(M[M.length - 1]))}</b> · ${t('updated')}: ${esc(DATA.generated_at)} · ${t('source')}: ${esc(DATA.source_file)}`;
+    `${t('period_label')}: <b>${M[0].slice(0, 4)} ${esc(mName(M[0]))} – ${esc(mName(M[M.length - 1]))}</b>` +
+    (S.globalPeriod !== 'all' ? ` · ${t('view_label')}: <b style="color:var(--accent)">${esc(periodLabel(S.globalPeriod))}</b>` : '') +
+    ` · ${t('updated')}: ${esc(DATA.generated_at)} · ${t('source')}: ${esc(DATA.source_file)}`;
   const ps = periods();
-  ['kpiPeriod', 'sharePeriod', 'vffChPeriod', 'vffGPeriod', 'vffMPeriod', 'vffCPeriod', 'vffSPeriod', 'chtPeriod', 'payPeriod', 'chdPeriod', 'brPeriod', 'cbPeriod', 'rkPeriod', 'bdPeriod']
-    .forEach(id => fillSelect(id, ps, S[id]));
+  ['globalPeriod', ...PERIOD_KEYS].forEach(id => fillSelect(id, ps, S[id]));
   fillSelect('payChannel', [{ id: 'all', label: t('all_offline') }, ...OFFLINE_CH.filter(c => DATA.pay[c]).map(c => ({ id: c, label: chName(c) }))], S.payChannel);
   fillSelect('chdChannel', CH.map(c => ({ id: c, label: chName(c) })), S.chdChannel);
   fillSelect('cbChannel', PRODUCT_CH.map(c => ({ id: c, label: chName(c) })), S.cbChannel);
@@ -1231,6 +1252,14 @@ function renderAll() {
   $('about').innerHTML = ABOUT[LANG](DATA) + ABOUT_EXTRA[LANG];
 }
 
+$('globalPeriod').addEventListener('change', e => {
+  S.globalPeriod = e.target.value;
+  MV = periodMonths(S.globalPeriod);
+  PERIOD_KEYS.forEach(k => { S[k] = S.globalPeriod; });
+  S.bdShowAll = false;
+  renderAll();
+  redrawCharts();
+});
 bindSelect('kpiPeriod', 'kpiPeriod', renderSummary);
 bindToggle('sumDetailBtn', renderSummary);
 
