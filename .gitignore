@@ -1,0 +1,5 @@
+data/records.json
+data/raw/
+__pycache__/
+node_modules/
+.vercel
