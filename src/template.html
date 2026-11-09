@@ -110,6 +110,17 @@ th.sortable{cursor:pointer;user-select:none;}
 th.sortable:hover{color:var(--ink);}
 th .arrow{color:var(--accent);}
 .tbl-scroll{overflow-x:auto;}
+.tbl-scroll:not(#bdTable,#vffCDetail) tr > :first-child,
+:is(#bdTable,#vffCDetail) tr > :nth-child(2){
+  position:sticky;left:0;z-index:1;
+  background-color:var(--pinned-cell-bg,var(--panel));
+  background-image:var(--pinned-cell-tint,none);
+  max-width:clamp(7rem,36vw,17rem);white-space:normal;overflow-wrap:anywhere;
+  box-shadow:inset -1px 0 var(--line);
+}
+.box{--pinned-cell-bg:var(--panel-2);}
+.tbl-scroll tr.period{--pinned-cell-tint:linear-gradient(rgba(255,255,255,.02),rgba(255,255,255,.02));}
+.tbl-scroll tr.hl{--pinned-cell-tint:linear-gradient(rgba(232,163,61,.10),rgba(232,163,61,.10));}
 .name-cell{display:inline-flex;align-items:center;gap:8px;}
 .donut path{cursor:pointer;transition:opacity .15s;}
 .donut.dim path:not(.on){opacity:.28;}
