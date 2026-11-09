@@ -17,14 +17,31 @@ CHANNELS = [  # display order; group = chart color family
     ('K village', 'store'), ('Thaniya', 'store'), ('Central LP', 'store'), ('Cart LP', 'store'),
     ('Online', 'online'), ('Shopee', 'online'), ('Lazada', 'online'),
     ('Event', 'event'), ('Consignment Other', 'consignment'),
+    ('Export', 'export'),
     ('Marketing BFT', 'service'), ('Commission', 'service'), ('Car rent', 'service'),
 ]
-GROUPS = ['store', 'online', 'event', 'consignment', 'service']
+GROUPS = ['store', 'online', 'event', 'consignment', 'export', 'service']
 SERVICE_BRAND = 'Service'  # fee lines: kept out of the brand list and model ranking
 
 
 def ser(v_vat_incl):
     return round(v_vat_incl / (1 + VAT_RATE), 2)
+
+
+def apply_confirmed_adjustments(data):
+    """Apply confirmed reporting corrections to the 2026 snapshot."""
+    sep, oct_ = '2026-09', '2026-10'
+    if sep in data['months']:
+        # Export is confirmed on a tax-exclusive, amount-only basis.
+        data['ch'].setdefault('Export', {}).setdefault(sep, [124198, 0, 0])
+    # Both records have two invoices, zero units, and only Service revenue.
+    # Apply each month separately so partial exports also reconcile.
+    marketing = data['ch'].get('Marketing BFT', {})
+    brands = data['ch_brand'].get('Marketing BFT', {})
+    for month, reported, corrected in ((sep, 186000, 146000), (oct_, 146000, 186000)):
+        if marketing.get(month) == [reported, 0, 2] and brands.get(month) == {'Service': [reported, 0]}:
+            marketing[month][0] = corrected
+            brands[month]['Service'][0] = corrected
 
 
 def main():
@@ -77,11 +94,12 @@ def main():
         'excluded': {k: ser(v) for k, v in src['meta']['excluded_vat_incl'].items()},
         'included': {k: ser(v) for k, v in src['meta'].get('included_vat_incl', {}).items()},
     }
+    apply_confirmed_adjustments(out)
     OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
 
     total = sum(v[0] for mm in out['ch'].values() for v in mm.values())
     print(f'{len(months)} months, {len(out["brands"])} brands -> {OUT} ({OUT.stat().st_size:,} bytes)')
-    print(f'total ex-VAT {total:,.2f}  (VAT-incl {sum(r["amount_vat_incl"] for r in recs):,.2f})')
+    print(f'total ex-VAT {total:,.2f}  (source VAT-incl {sum(r["amount_vat_incl"] for r in recs):,.2f})')
 
 
 if __name__ == '__main__':
