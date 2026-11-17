@@ -251,6 +251,8 @@ def main():
                 'month': d.strftime('%Y-%m'),
                 'channel': channel,
                 'warehouse': g(r, 'Warehouse/Branch') or '',
+                # consignment partner = the partner's own branch on the invoice (None otherwise)
+                'consignee': g(r, 'Warehouse/Branch') if g(r, 'Warehouse/Branch') in CONSIGNMENT_WAREHOUSES else None,
                 'order_id': order_no,
                 'order_key': order_key,
                 'brand': brand,

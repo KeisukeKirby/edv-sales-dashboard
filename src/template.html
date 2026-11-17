@@ -136,6 +136,17 @@ th .arrow{color:var(--accent);}
 .hlist .fill{height:100%;border-radius:0 4px 4px 0;}
 .hlist .v{text-align:right;font-family:var(--mono);color:var(--ink);}
 .line-dot{cursor:pointer;}
+/* daily sales calendar: Monday-first; Saturday blue, Sunday red; cell tint = sales level */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
+.cal .hd{font-size:11.5px;text-align:center;color:var(--ink-dim);padding:2px 0;font-weight:600;}
+.cal .sat,.cal .sat .dn{color:#6da7ec;}
+.cal .sun,.cal .sun .dn{color:#ee8585;}
+.cal .d{border:1px solid var(--line);border-radius:6px;padding:4px 6px;min-height:50px;display:flex;flex-direction:column;justify-content:space-between;cursor:default;}
+.cal .d.empty{border:none;background:transparent;}
+.cal .dn{font-size:11px;color:var(--ink-dim);font-weight:600;}
+.cal .v{font-family:var(--mono);font-size:13px;text-align:right;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;}
+.cal .d.zero .v{color:var(--ink-faint);font-weight:400;}
+@media (max-width:560px){.cal .d{min-height:42px;padding:3px 4px;}.cal .v{font-size:11px;}}
 .tip{position:fixed;pointer-events:none;background:#0B140F;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.4);z-index:50;display:none;max-width:300px;}
 .tip .t{font-weight:700;margin-bottom:4px;}
 .tip .r{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums;}
@@ -317,7 +328,34 @@ th .arrow{color:var(--accent);}
 
     <section class="card">
       <div class="card-head">
-        <h2><span class="num">03</span><span data-i18n="s_pay"></span></h2>
+        <h2><span class="num">03</span><span data-i18n="s_cal"></span></h2>
+        <div class="controls"><select id="calStore"></select><select id="calMonth"></select></div>
+      </div>
+      <p class="note top" data-i18n="cal_note"></p>
+      <div class="note top" id="calSummary"></div>
+      <div class="grid2">
+        <div class="box"><h3 class="sub" data-i18n="cal_title"></h3><div id="calGrid"></div></div>
+        <div class="box"><h3 class="sub" data-i18n="wd_title"></h3><div class="chart" id="wdChart"></div><div class="tbl-scroll" id="wdTable" style="margin-top:10px"></div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">04</span><span data-i18n="s_consign"></span></h2>
+        <div class="controls"><select id="conPeriod"></select></div>
+      </div>
+      <p class="note top" data-i18n="con_note"></p>
+      <div class="grid2">
+        <div class="box tbl-scroll"><h3 class="sub" data-i18n="con_partner"></h3><div id="conPartner"></div></div>
+        <div class="box"><h3 class="sub" data-i18n="con_brand"></h3><div class="donut-wrap"><div class="chart" id="conBrandDonut"></div><div class="vlegend" id="conBrandLegend"></div></div>
+          <h3 class="sub" style="margin-top:16px" data-i18n="con_model"></h3><div class="tbl-scroll" id="conModel"></div></div>
+      </div>
+      <div class="btn-row"><button class="btn-more" id="conBtn"></button></div>
+      <div class="detail tbl-scroll" id="conDetail" hidden></div>
+    </section>
+    <section class="card">
+      <div class="card-head">
+        <h2><span class="num">05</span><span data-i18n="s_pay"></span></h2>
         <div class="controls"><select id="payChannel"></select><select id="payPeriod"></select></div>
       </div>
       <p class="note top" id="payNote"></p>
@@ -328,7 +366,7 @@ th .arrow{color:var(--accent);}
 
     <section class="card">
       <div class="card-head">
-        <h2><span class="num">04</span><span data-i18n="s_chdetail"></span></h2>
+        <h2><span class="num">06</span><span data-i18n="s_chdetail"></span></h2>
         <div class="controls"><select id="chdChannel"></select><select id="chdPeriod"></select></div>
       </div>
       <div class="note top" id="chdSummary"></div>
@@ -451,6 +489,13 @@ const I18N = {
     ch_Online:'Online(SNS・直販)', 'ch_Consignment Other':'Consignment Other(委託・法人)', 'ch_Marketing BFT':'Marketing BFT(マーケティング)', ch_Commission:'Commission(販売手数料)', 'ch_Car rent':'Car rent(車両賃貸)', ch_Event:'イベント',
     b_Others:'その他', metric_amt:'金額', metric_qty:'数量',
     no_data:'この期間のデータはありません',
+    s_cal:'店舗別 日別売上カレンダー', cal_title:'日別売上(千THB)', wd_title:'曜日別売上(千THB)',
+    cal_note:'月曜始まり。土曜は青、日曜は赤。マスの色が濃いほど売上が多い日です。金額の単位は千バーツ(税抜)。',
+    cal_sum_fmt:'月合計 {tot} 千THB · 販売日数 {n} 日 · 1日平均 {avg} 千THB · 最高 {best}',
+    wd_days:'日数', wd_avg:'1日平均', wd_total:'合計', col_weekday:'曜日',
+    s_consign:'委託販売の実績(委託先・ブランド別)', con_partner:'委託先別', con_brand:'ブランド別', con_model:'商品別',
+    con_note:'委託先8社への請求額(税抜)。Consignment Other のうち委託先の分だけで、法人販売や Barefoot Inc. への請求は含みません。',
+    col_partner:'委託先', col_invoices:'請求書数',
   },
   en: {
     title:'EDV Sales Performance Dashboard',
@@ -494,6 +539,13 @@ const I18N = {
     ch_Online:'Online (social/direct)', 'ch_Consignment Other':'Consignment Other (consignment/B2B)', 'ch_Marketing BFT':'Marketing BFT', ch_Commission:'Commission', 'ch_Car rent':'Car rent', ch_Event:'Event',
     b_Others:'Others', metric_amt:'Amount', metric_qty:'Units',
     no_data:'No data for this period',
+    s_cal:'Daily sales calendar by store', cal_title:'Daily sales (THB thousand)', wd_title:'Sales by weekday (THB thousand)',
+    cal_note:'Weeks start on Monday; Saturday in blue, Sunday in red. Darker cells are higher-sales days. Amounts in THB thousand (ex-VAT).',
+    cal_sum_fmt:'Month {tot}k THB · {n} selling days · avg {avg}k THB/day · best {best}',
+    wd_days:'Days', wd_avg:'Avg/day', wd_total:'Total', col_weekday:'Weekday',
+    s_consign:'Consignment by partner and brand', con_partner:'By partner', con_brand:'By brand', con_model:'By product',
+    con_note:'Amounts invoiced to the 8 consignment partners (ex-VAT). Only the partner part of Consignment Other; B2B sales and invoices to Barefoot Inc. are not included.',
+    col_partner:'Partner', col_invoices:'Invoices',
   },
   th: {
     title:'แดชบอร์ดยอดขาย EDV',
@@ -537,7 +589,20 @@ const I18N = {
     ch_Online:'ออนไลน์ (โซเชียล/ขายตรง)', 'ch_Consignment Other':'Consignment Other (ฝากขาย/นิติบุคคล)', 'ch_Marketing BFT':'Marketing BFT (การตลาด)', ch_Commission:'Commission (ค่าคอมมิชชั่น)', 'ch_Car rent':'Car rent (ค่าเช่ารถ)', ch_Event:'อีเวนต์',
     b_Others:'อื่นๆ', metric_amt:'ยอดเงิน', metric_qty:'จำนวน',
     no_data:'ไม่มีข้อมูลในช่วงเวลานี้',
+    s_cal:'ปฏิทินยอดขายรายวันตามร้าน', cal_title:'ยอดขายรายวัน (พันบาท)', wd_title:'ยอดขายตามวันในสัปดาห์ (พันบาท)',
+    cal_note:'สัปดาห์เริ่มวันจันทร์ วันเสาร์สีน้ำเงิน วันอาทิตย์สีแดง ช่องสีเข้มคือวันที่ขายได้มาก หน่วยเป็นพันบาท (ไม่รวม VAT)',
+    cal_sum_fmt:'รวมเดือน {tot} พันบาท · ขาย {n} วัน · เฉลี่ย {avg} พันบาท/วัน · สูงสุด {best}',
+    wd_days:'จำนวนวัน', wd_avg:'เฉลี่ย/วัน', wd_total:'รวม', col_weekday:'วัน',
+    s_consign:'ยอดฝากขายตามร้านและแบรนด์', con_partner:'ตามร้านฝากขาย', con_brand:'ตามแบรนด์', con_model:'ตามสินค้า',
+    con_note:'ยอดที่เรียกเก็บจากร้านฝากขาย 8 ราย (ไม่รวม VAT) เฉพาะส่วนฝากขายใน Consignment Other ไม่รวมการขายนิติบุคคลและใบแจ้งหนี้ถึง Barefoot Inc.',
+    col_partner:'ร้านฝากขาย', col_invoices:'ใบแจ้งหนี้',
   },
+};
+// weekday labels, Monday first (calendar + weekday chart)
+const WEEKDAYS = {
+  ja:['月','火','水','木','金','土','日'],
+  en:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+  th:['จ.','อ.','พ.','พฤ.','ศ.','ส.','อา.'],
 };
 const MONTHS = {
   ja:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
@@ -815,6 +880,7 @@ function vlegend(items) { // -> html rows with data-k
 /* ------------------------------------------------------------------ state + small UI helpers */
 const S = {
   globalPeriod: 'all', kpiPeriod: 'all', sharePeriod: 'all',
+  calStore: 'K village', calMonth: M[M.length - 1], conPeriod: 'all',
   vffChPeriod: 'all', vffChMetric: 'pairs', vffGPeriod: 'all', vffMPeriod: 'all', vffCPeriod: 'all', vffSPeriod: 'all',
   chMonthlyMetric: 'amt', chtPeriod: 'all', chtSort: { key: 'amt', dir: -1 },
   payChannel: 'all', payPeriod: 'all', chdChannel: 'K village', chdPeriod: 'all',
@@ -1069,6 +1135,76 @@ function renderChDetail() {
   $('chdLegend').innerHTML = vlegend(items);
   donutLinked($('chdDonut'), $('chdLegend'), items, v => fmt(v) + ' ' + t('unit_thb'));
 }
+/* ------------------------------------------------------------------ daily calendar + weekday chart */
+const SAT_COLOR = '#3987e5', SUN_COLOR = '#e66767', WEEKDAY_COLOR = 'var(--other-gray)';
+const k1 = v => (v / 1000).toFixed(1); // THB -> THB thousand, one decimal
+function renderCalendar() {
+  const s = S.calStore, m = S.calMonth, dd = DATA.daily[s] || {};
+  const y = +m.slice(0, 4), mo = +m.slice(5), nDays = new Date(y, mo, 0).getDate();
+  const lead = (new Date(y, mo - 1, 1).getDay() + 6) % 7; // Monday-first offset
+  const days = [...Array(nDays)].map((_, i) => { const d = `${m}-${String(i + 1).padStart(2, '0')}`;
+    return { d, n: i + 1, wd: (lead + i) % 7, v: dd[d] || [0, 0, 0] }; });
+  const max = Math.max(0, ...days.map(x => x.v[0]));
+  const cls = wd => (wd === 5 ? ' sat' : wd === 6 ? ' sun' : '');
+  let h = `<div class="cal">${WEEKDAYS[LANG].map((w, i) => `<div class="hd${cls(i)}">${esc(w)}</div>`).join('')}`;
+  h += '<div class="d empty"></div>'.repeat(lead);
+  days.forEach(x => {
+    // tint = sales relative to the month's best day (accent hue, so it never competes with Sat/Sun colors)
+    const a = max && x.v[0] > 0 ? 0.06 + 0.34 * x.v[0] / max : 0;
+    h += `<div class="d${cls(x.wd)}${x.v[0] > 0 ? '' : ' zero'}" data-d="${x.d}" style="background:rgba(232,163,61,${a.toFixed(3)})"><span class="dn">${x.n}</span><span class="v">${x.v[0] > 0 ? k1(x.v[0]) : '–'}</span></div>`;
+  });
+  $('calGrid').innerHTML = h + '</div>';
+  $('calGrid').querySelectorAll('.d[data-d]').forEach(c => {
+    const x = days.find(z => z.d === c.dataset.d);
+    c.addEventListener('mousemove', e => showTip(e, `<div class="t">${esc(chName(s))} · ${x.d} (${esc(WEEKDAYS[LANG][x.wd])})</div><div class="r"><span>${t('col_amount')}</span><span>${fmt(x.v[0])} ${t('unit_thb')}</span></div><div class="r"><span>${t('col_qty')}</span><span>${fmt(x.v[1])}</span></div><div class="r"><span>${t('col_orders')}</span><span>${fmt(x.v[2])}</span></div>`));
+    c.addEventListener('mouseleave', hideTip);
+  });
+  const sold = days.filter(x => x.v[0] > 0), tot = sold.reduce((a, x) => a + x.v[0], 0);
+  const best = sold.reduce((b, x) => (!b || x.v[0] > b.v[0] ? x : b), null);
+  $('calSummary').textContent = sold.length ? tf('cal_sum_fmt', { tot: fmt(tot / 1000, 1), n: sold.length, avg: k1(tot / sold.length),
+    best: `${mName(m)}${best.n}${LANG === 'ja' ? '日' : ''} (${WEEKDAYS[LANG][best.wd]}) ${k1(best.v[0])}` }) : t('no_data');
+
+  // weekday totals; the average divides by how many of that weekday the month has
+  const wd = [...Array(7)].map((_, i) => { const ds = days.filter(x => x.wd === i);
+    return { tot: ds.reduce((a, x) => a + x.v[0], 0), n: ds.length }; });
+  const series = [
+    { color: WEEKDAY_COLOR, values: wd.map((w, i) => (i < 5 ? w.tot / 1000 : 0)) },
+    { color: SAT_COLOR, values: wd.map((w, i) => (i === 5 ? w.tot / 1000 : 0)) },
+    { color: SUN_COLOR, values: wd.map((w, i) => (i === 6 ? w.tot / 1000 : 0)) },
+  ];
+  barChart($('wdChart'), [0, 1, 2, 3, 4, 5, 6], i => WEEKDAYS[LANG][i], series, i =>
+    `<div class="t">${esc(chName(s))} · ${esc(mName(m))} · ${esc(WEEKDAYS[LANG][i])}</div><div class="r"><span>${t('wd_total')}</span><span>${k1(wd[i].tot)}</span></div><div class="r"><span>${t('wd_days')}</span><span>${wd[i].n}</span></div><div class="r"><span>${t('wd_avg')}</span><span>${wd[i].n ? k1(wd[i].tot / wd[i].n) : '–'}</span></div>`);
+  $('wdTable').innerHTML = `<table><thead><tr><th>${t('col_weekday')}</th>${WEEKDAYS[LANG].map((w, i) => `<th class="${cls(i).trim()}" style="${i === 5 ? 'color:#6da7ec' : i === 6 ? 'color:#ee8585' : ''}">${esc(w)}</th>`).join('')}</tr></thead><tbody>
+    <tr><td>${t('wd_total')}</td>${wd.map(w => `<td>${k1(w.tot)}</td>`).join('')}</tr>
+    <tr class="sub"><td>${t('wd_avg')}</td>${wd.map(w => `<td>${w.n ? k1(w.tot / w.n) : '–'}</td>`).join('')}</tr></tbody></table>`;
+}
+
+/* ------------------------------------------------------------------ consignment partners */
+function renderConsign() {
+  const ms = new Set(periodMonths(S.conPeriod));
+  const rows = DATA.consign.filter(r => ms.has(r[0])); // [month, partner, brand, model, units, amount]
+  const sumBy = i => { const o = {}; rows.forEach(r => { const x = o[r[i]] || (o[r[i]] = [0, 0]); x[0] += r[4]; x[1] += r[5]; }); return o; };
+  const inv = p => [...ms].reduce((a, m) => a + (DATA.consign_inv[`${m}|${p}`] || 0), 0);
+  const byP = Object.entries(sumBy(1)).sort((a, b) => b[1][1] - a[1][1]);
+  const tot = byP.reduce((a, [, v]) => [a[0] + v[0], a[1] + v[1]], [0, 0]);
+  const maxA = Math.max(0, ...byP.map(([, v]) => v[1]));
+  $('conPartner').innerHTML = byP.length ? `<table><thead><tr><th>${t('col_partner')}</th><th style="width:30%"></th><th>${t('col_amount')}</th><th>${t('col_share')}</th><th>${t('col_qty')}</th><th>${t('col_invoices')}</th></tr></thead><tbody>${
+    byP.map(([p, v]) => `<tr><td>${esc(p)}</td><td><div class="hbar" style="grid-template-columns:1fr"><div class="track"><div class="fill" style="width:${maxA ? v[1] / maxA * 100 : 0}%;background:var(--g-consignment)"></div></div></div></td><td>${fmt(v[1])}</td><td>${pct(v[1], tot[1])}</td><td>${fmt(v[0])}</td><td>${fmt(inv(p))}</td></tr>`).join('')
+    }<tr class="total"><td>${t('total')}</td><td></td><td>${fmt(tot[1])}</td><td>100%</td><td>${fmt(tot[0])}</td><td>${fmt(byP.reduce((a, [p]) => a + inv(p), 0))}</td></tr></tbody></table>` : `<p class="note">${t('no_data')}</p>`;
+  const bs = Object.fromEntries(Object.entries(sumBy(2)).map(([b, v]) => [b, v[1]]));
+  const items = brandItems(bs);
+  $('conBrandLegend').innerHTML = vlegend(items);
+  donutLinked($('conBrandDonut'), $('conBrandLegend'), items, v => fmt(v) + ' ' + t('unit_thb'));
+  const byM = Object.entries(sumBy(3)).sort((a, b) => b[1][1] - a[1][1]);
+  $('conModel').innerHTML = byM.length ? `<table><thead><tr><th class="l">${t('col_model')}</th><th>${t('col_qty')}</th><th>${t('col_amount')}</th><th>${t('col_share')}</th></tr></thead><tbody>${
+    byM.map(([mo, v]) => `<tr><td class="l" style="white-space:normal">${esc(mo)}</td><td>${fmt(v[0])}</td><td>${fmt(v[1])}</td><td>${pct(v[1], tot[1])}</td></tr>`).join('')}</tbody></table>` : `<p class="note">${t('no_data')}</p>`;
+  detailToggle('conBtn', 'conDetail', () => {
+    const partners = [...new Set(DATA.consign.map(r => r[1]))];
+    return monthTable(t('col_partner'), partners.map(p => ({ label: p, key: p })),
+      (p, ms2) => DATA.consign.filter(r => r[1] === p && ms2.includes(r[0])).reduce((a, r) => a + r[5], 0));
+  });
+}
+
 // brand amounts -> donut items: top 7 brands in fixed colors, the rest folded into "Others"
 function brandItems(bs) {
   const items = TOP_BRANDS.map(b => ({ key: b, label: b, color: brandColor(b), value: bs[b] || 0 }));
@@ -1243,9 +1379,9 @@ const ABOUT_EXTRA = {
 
 /* ------------------------------------------------------------------ wiring */
 // every per-section period dropdown (state key == select id); the global one overrides them all
-const PERIOD_KEYS = ['kpiPeriod', 'sharePeriod', 'vffChPeriod', 'vffGPeriod', 'vffMPeriod', 'vffCPeriod', 'vffSPeriod', 'chtPeriod', 'payPeriod', 'chdPeriod', 'brPeriod', 'cbPeriod', 'rkPeriod', 'bdPeriod'];
+const PERIOD_KEYS = ['kpiPeriod', 'sharePeriod', 'vffChPeriod', 'vffGPeriod', 'vffMPeriod', 'vffCPeriod', 'vffSPeriod', 'chtPeriod', 'conPeriod', 'payPeriod', 'chdPeriod', 'brPeriod', 'cbPeriod', 'rkPeriod', 'bdPeriod'];
 const RENDERERS = [renderSummary, renderMonthly, renderVffStore, renderVffChannel, renderVffGender, renderVffModels, renderVffColors, renderVffSizes,
-  renderChMonthly, renderShare, renderPay, renderChDetail, renderBrand, renderChannelBrand, renderRanking, renderBrandDetail, renderVSoul];
+  renderChMonthly, renderShare, renderCalendar, renderConsign, renderPay, renderChDetail, renderBrand, renderChannelBrand, renderRanking, renderBrandDetail, renderVSoul];
 function renderAll() {
   document.documentElement.lang = LANG;
   document.title = t('title');
@@ -1259,6 +1395,8 @@ function renderAll() {
   ['globalPeriod', ...PERIOD_KEYS].forEach(id => fillSelect(id, ps, S[id]));
   fillSelect('payChannel', [{ id: 'all', label: t('all_offline') }, ...OFFLINE_CH.filter(c => DATA.pay[c]).map(c => ({ id: c, label: chName(c) }))], S.payChannel);
   fillSelect('chdChannel', CH.map(c => ({ id: c, label: chName(c) })), S.chdChannel);
+  fillSelect('calStore', Object.keys(DATA.daily).sort((a, b) => CH.indexOf(a) - CH.indexOf(b)).map(c => ({ id: c, label: chName(c) })), S.calStore);
+  fillSelect('calMonth', M.slice().reverse().map(m => ({ id: m, label: `${m.slice(0, 4)} ${mName(m)}` })), S.calMonth);
   fillSelect('cbChannel', PRODUCT_CH.map(c => ({ id: c, label: chName(c) })), S.cbChannel);
   fillSelect('bdBrand', DATA.brands.map(b => ({ id: b, label: bName(b) })), S.bdBrand);
   fillSelect('brMetric', [{ id: 'amt', label: t('metric_amt') }, { id: 'qty', label: t('metric_qty') }], S.brMetric);
@@ -1270,6 +1408,7 @@ $('globalPeriod').addEventListener('change', e => {
   S.globalPeriod = e.target.value;
   MV = periodMonths(S.globalPeriod);
   PERIOD_KEYS.forEach(k => { S[k] = S.globalPeriod; });
+  S.calMonth = MV[MV.length - 1]; // the calendar shows one month: the last one of the chosen period
   S.bdShowAll = false;
   renderAll();
   redrawCharts();
@@ -1299,6 +1438,10 @@ bindSelect('payPeriod', 'payPeriod', renderPay);
 bindToggle('payBtn', renderPay);
 bindSelect('chdChannel', 'chdChannel', renderChDetail);
 bindSelect('chdPeriod', 'chdPeriod', renderChDetail);
+bindSelect('calStore', 'calStore', renderCalendar);
+bindSelect('calMonth', 'calMonth', renderCalendar);
+bindSelect('conPeriod', 'conPeriod', renderConsign);
+bindToggle('conBtn', renderConsign);
 
 bindSelect('brMetric', 'brMetric', renderBrand);
 bindSelect('brPeriod', 'brPeriod', renderBrand);
