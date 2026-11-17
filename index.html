@@ -340,12 +340,17 @@ th .arrow{color:var(--accent);}
       <div class="box" style="margin-top:16px">
         <div class="card-head" style="margin-bottom:8px">
           <h3 class="sub" style="margin:0" data-i18n="wdm_title"></h3>
-          <div class="seg" id="wdmMetric">
-            <button data-v="tot" class="active" data-i18n="wd_total"></button>
-            <button data-v="avg" data-i18n="wd_avg"></button>
+          <div class="controls">
+            <select id="wdmStore"></select>
+            <div class="seg" id="wdmMetric">
+              <button data-v="tot" class="active" data-i18n="wd_total"></button>
+              <button data-v="avg" data-i18n="wd_avg"></button>
+            </div>
           </div>
         </div>
-        <div class="tbl-scroll" id="wdmTable"></div>
+        <div class="legend" id="wdmLegend"></div>
+        <div class="chart" id="wdmChart"></div>
+        <div class="tbl-scroll" id="wdmTable" style="margin-top:12px"></div>
         <p class="note" data-i18n="wdm_note"></p>
       </div>
     </section>
@@ -521,7 +526,7 @@ const I18N = {
     cal_note:'月曜始まり。土曜は青、日曜は赤。マスの色が濃いほど売上が多い日です。金額の単位は千バーツ(税抜)。',
     cal_sum_fmt:'月合計 {tot} 千THB · 販売日数 {n} 日 · 1日平均 {avg} 千THB · 最高 {best}',
     wd_days:'日数', wd_avg:'1日平均', wd_total:'合計', col_weekday:'曜日',
-    col_ym:'年月', wdm_title:'曜日別の月次売上(千THB)', wdm_note:'選んだ店舗の、月ごと・曜日ごとの売上。1日平均はその月にある該当曜日の日数で割った値。表示する月は「全ブロックの期間をまとめて変更」に合わせます。',
+    col_ym:'年月', wdm_all:'3店舗合計', wdm_weekdays:'平日(月〜金)', wdm_sat:'土曜', wdm_sun:'日曜', wdm_title:'曜日別の月次売上(千THB)', wdm_note:'プルダウンで3店舗合計(K village・Thaniya・Central LP)または店舗を選べます。1日平均はその月にある該当曜日の日数で割った値。グラフの平日は月〜金の合計(1日平均の場合は平日1日あたり)。表示する月は「全ブロックの期間をまとめて変更」に合わせます。',
     s_consign:'委託販売の実績(委託先・ブランド別)', con_partner:'委託先別', con_brand:'ブランド別', con_model:'商品別',
     conx_title:'委託先 × ブランド(商品)別の実績', conx_note:'行がブランド(または商品)、列が委託先。各委託先がどのブランド・商品をどれだけ売ったかを示します。右端は全委託先の合計、割合は委託先ごとの構成比です。',
     con_note:'委託先8社への請求額(税抜)。Consignment Other のうち委託先の分だけで、法人販売や Barefoot Inc. への請求は含みません。',
@@ -573,7 +578,7 @@ const I18N = {
     cal_note:'Weeks start on Monday; Saturday in blue, Sunday in red. Darker cells are higher-sales days. Amounts in THB thousand (ex-VAT).',
     cal_sum_fmt:'Month {tot}k THB · {n} selling days · avg {avg}k THB/day · best {best}',
     wd_days:'Days', wd_avg:'Avg/day', wd_total:'Total', col_weekday:'Weekday',
-    col_ym:'Month', wdm_title:'Monthly sales by weekday (THB thousand)', wdm_note:'Sales of the selected store by month and weekday. Avg/day divides by how many of that weekday the month has. Months follow the period chosen for all blocks.',
+    col_ym:'Month', wdm_all:'3 stores combined', wdm_weekdays:'Weekdays (Mon–Fri)', wdm_sat:'Saturday', wdm_sun:'Sunday', wdm_title:'Monthly sales by weekday (THB thousand)', wdm_note:'Choose the 3 stores combined (K village, Thaniya, Central LP) or one store. Avg/day divides by how many of that weekday the month has. In the chart, weekdays are Mon–Fri combined (per weekday day when Avg/day). Months follow the period chosen for all blocks.',
     s_consign:'Consignment by partner and brand', con_partner:'By partner', con_brand:'By brand', con_model:'By product',
     conx_title:'Partner × brand (product)', conx_note:'Rows are brands (or products), columns are partners: how much of each brand or product each partner sold. The right-hand column totals all partners; percentages are each partner\'s own mix.',
     con_note:'Amounts invoiced to the 8 consignment partners (ex-VAT). Only the partner part of Consignment Other; B2B sales and invoices to Barefoot Inc. are not included.',
@@ -625,7 +630,7 @@ const I18N = {
     cal_note:'สัปดาห์เริ่มวันจันทร์ วันเสาร์สีน้ำเงิน วันอาทิตย์สีแดง ช่องสีเข้มคือวันที่ขายได้มาก หน่วยเป็นพันบาท (ไม่รวม VAT)',
     cal_sum_fmt:'รวมเดือน {tot} พันบาท · ขาย {n} วัน · เฉลี่ย {avg} พันบาท/วัน · สูงสุด {best}',
     wd_days:'จำนวนวัน', wd_avg:'เฉลี่ย/วัน', wd_total:'รวม', col_weekday:'วัน',
-    col_ym:'เดือน', wdm_title:'ยอดขายรายเดือนตามวันในสัปดาห์ (พันบาท)', wdm_note:'ยอดขายของร้านที่เลือก แยกตามเดือนและวัน เฉลี่ย/วัน หารด้วยจำนวนวันนั้นในเดือน เดือนที่แสดงตามช่วงเวลาที่เลือกให้ทุกบล็อก',
+    col_ym:'เดือน', wdm_all:'รวม 3 ร้าน', wdm_weekdays:'วันธรรมดา (จ.–ศ.)', wdm_sat:'วันเสาร์', wdm_sun:'วันอาทิตย์', wdm_title:'ยอดขายรายเดือนตามวันในสัปดาห์ (พันบาท)', wdm_note:'เลือกรวม 3 ร้าน (K village, Thaniya, Central LP) หรือร้านใดร้านหนึ่ง เฉลี่ย/วัน หารด้วยจำนวนวันนั้นในเดือน ในกราฟ วันธรรมดาคือ จ.–ศ. รวมกัน (ต่อวันเมื่อเลือกเฉลี่ย/วัน) เดือนที่แสดงตามช่วงเวลาที่เลือกให้ทุกบล็อก',
     s_consign:'ยอดฝากขายตามร้านและแบรนด์', con_partner:'ตามร้านฝากขาย', con_brand:'ตามแบรนด์', con_model:'ตามสินค้า',
     conx_title:'ร้านฝากขาย × แบรนด์ (สินค้า)', conx_note:'แถวคือแบรนด์ (หรือสินค้า) คอลัมน์คือร้านฝากขาย แสดงว่าแต่ละร้านขายแบรนด์หรือสินค้าใดได้เท่าไร คอลัมน์ขวาสุดคือรวมทุกร้าน เปอร์เซ็นต์คือสัดส่วนภายในร้านนั้น',
     con_note:'ยอดที่เรียกเก็บจากร้านฝากขาย 8 ราย (ไม่รวม VAT) เฉพาะส่วนฝากขายใน Consignment Other ไม่รวมการขายนิติบุคคลและใบแจ้งหนี้ถึง Barefoot Inc.',
@@ -914,7 +919,7 @@ function vlegend(items) { // -> html rows with data-k
 /* ------------------------------------------------------------------ state + small UI helpers */
 const S = {
   globalPeriod: 'all', kpiPeriod: 'all', sharePeriod: 'all',
-  calStore: 'K village', calMonth: M[M.length - 1], conPeriod: 'all', wdmMetric: 'tot', conxDim: 'brand', conxMetric: 'amt',
+  calStore: 'K village', calMonth: M[M.length - 1], conPeriod: 'all', wdmMetric: 'tot', wdmStore: 'all', conxDim: 'brand', conxMetric: 'amt',
   vffChPeriod: 'all', vffChMetric: 'pairs', vffGPeriod: 'all', vffMPeriod: 'all', vffCPeriod: 'all', vffSPeriod: 'all',
   chMonthlyMetric: 'amt', chtPeriod: 'all', chtSort: { key: 'amt', dir: -1 },
   payChannel: 'all', payPeriod: 'all', chdChannel: 'K village', chdPeriod: 'all',
@@ -1220,9 +1225,11 @@ function renderCalendar() {
   renderWeekdayByMonth();
 }
 
-// month x weekday table for the selected store; months follow the global period (MV)
+// month x weekday table + chart for one store or the 3 stores combined; months follow the global period (MV)
 function renderWeekdayByMonth() {
-  const s = S.calStore, dd = DATA.daily[s] || {}, avg = S.wdmMetric === 'avg';
+  const avg = S.wdmMetric === 'avg', stores = S.wdmStore === 'all' ? Object.keys(DATA.daily) : [S.wdmStore];
+  const dd = {}; // date -> [amount] summed over the chosen stores
+  stores.forEach(s => { for (const d in DATA.daily[s] || {}) dd[d] = [(dd[d] || [0])[0] + DATA.daily[s][d][0]]; });
   const grid = MV.map(m => {
     const y = +m.slice(0, 4), mo = +m.slice(5), n = new Date(y, mo, 0).getDate(), lead = (new Date(y, mo - 1, 1).getDay() + 6) % 7;
     const w = [...Array(7)].map(() => ({ tot: 0, n: 0 }));
@@ -1239,6 +1246,19 @@ function renderWeekdayByMonth() {
   const allTot = all.reduce((a, c) => a + c.tot, 0), allN = all.reduce((a, c) => a + c.n, 0);
   const foot = grid.length > 1 ? `<tr class="total"><td>${t('total')}</td>${all.map(c => `<td>${c.tot > 0 ? k1(val(c)) : '–'}</td>`).join('')}<td>${k1(avg ? (allN ? allTot / allN : 0) : allTot)}</td></tr>` : '';
   $('wdmTable').innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}${foot}</tbody></table>`;
+
+  // chart: weekdays (Mon-Fri) vs Saturday vs Sunday per month, in the calendar's gray / blue / red
+  const part = (g, idxs) => { const c = idxs.reduce((a, i) => ({ tot: a.tot + g.w[i].tot, n: a.n + g.w[i].n }), { tot: 0, n: 0 }); return val(c) / 1000; };
+  const series = [
+    { key: 'wkd', color: WEEKDAY_COLOR, values: grid.map(g => part(g, [0, 1, 2, 3, 4])) },
+    { key: 'sat', color: SAT_COLOR, values: grid.map(g => part(g, [5])) },
+    { key: 'sun', color: SUN_COLOR, values: grid.map(g => part(g, [6])) },
+  ];
+  const lbl = { wkd: t('wdm_weekdays'), sat: t('wdm_sat'), sun: t('wdm_sun') };
+  $('wdmLegend').innerHTML = series.map(x => `<span>${sw(x.color)}${esc(lbl[x.key])}</span>`).join('');
+  groupedBarChart($('wdmChart'), grid.map(g => mName(g.m)), series, i =>
+    `<div class="t">${esc(grid[i].m.slice(0, 4) + ' ' + mName(grid[i].m))} · ${esc(avg ? t('wd_avg') : t('wd_total'))}</div>` +
+    series.map(x => `<div class="r"><span>${sw(x.color)}${esc(lbl[x.key])}</span><span>${x.values[i].toFixed(1)}</span></div>`).join(''));
 }
 
 /* ------------------------------------------------------------------ consignment partners */
@@ -1473,6 +1493,7 @@ function renderAll() {
   fillSelect('chdChannel', CH.map(c => ({ id: c, label: chName(c) })), S.chdChannel);
   fillSelect('calStore', Object.keys(DATA.daily).sort((a, b) => CH.indexOf(a) - CH.indexOf(b)).map(c => ({ id: c, label: chName(c) })), S.calStore);
   fillSelect('calMonth', M.slice().reverse().map(m => ({ id: m, label: `${m.slice(0, 4)} ${mName(m)}` })), S.calMonth);
+  fillSelect('wdmStore', [{ id: 'all', label: t('wdm_all') }, ...Object.keys(DATA.daily).sort((a, b) => CH.indexOf(a) - CH.indexOf(b)).map(c => ({ id: c, label: chName(c) }))], S.wdmStore);
   fillSelect('cbChannel', PRODUCT_CH.map(c => ({ id: c, label: chName(c) })), S.cbChannel);
   fillSelect('bdBrand', DATA.brands.map(b => ({ id: b, label: bName(b) })), S.bdBrand);
   fillSelect('brMetric', [{ id: 'amt', label: t('metric_amt') }, { id: 'qty', label: t('metric_qty') }], S.brMetric);
@@ -1516,7 +1537,8 @@ bindSelect('chdChannel', 'chdChannel', renderChDetail);
 bindSelect('chdPeriod', 'chdPeriod', renderChDetail);
 bindSelect('calStore', 'calStore', renderCalendar);
 bindSelect('calMonth', 'calMonth', renderCalendar);
-bindSeg('wdmMetric', 'wdmMetric', renderCalendar);
+bindSeg('wdmMetric', 'wdmMetric', renderWeekdayByMonth);
+bindSelect('wdmStore', 'wdmStore', renderWeekdayByMonth);
 bindSelect('conPeriod', 'conPeriod', renderConsign);
 bindToggle('conBtn', renderConsign);
 bindSeg('conxDim', 'conxDim', renderConsign);
