@@ -22,6 +22,7 @@ CHANNELS = [  # display order; group = chart color family
 ]
 GROUPS = ['store', 'online', 'event', 'consignment', 'export', 'service']
 SERVICE_BRAND = 'Service'  # fee lines: kept out of the brand list and model ranking
+DAILY_STORES = ['K village', 'Thaniya', 'Central LP']  # stores shown in the daily sales calendar
 
 
 def ser(v_vat_incl):
@@ -73,6 +74,17 @@ def main():
     for p in src.get('payments', []):
         pay[p['channel']][p['month']][p['method']] += p['amount_vat_incl']
 
+    # daily sales per store for the calendar: store -> date -> [amount, units, orders]
+    daily = defaultdict(lambda: defaultdict(lambda: [0.0, 0.0, set()]))
+    for r in recs:
+        if r['channel'] in DAILY_STORES:
+            e = daily[r['channel']][r['date']]; e[0] += r['amount_vat_incl']; e[1] += r['qty']; e[2].add(r['order_key'])
+    # consignment partners: month x partner x brand x model -> [units, amount, invoices]
+    consign = defaultdict(lambda: [0.0, 0.0, set()])
+    for r in recs:
+        if r.get('consignee'):
+            e = consign[(r['month'], r['consignee'], r['brand'], r['model'])]; e[0] += r['qty']; e[1] += r['amount_vat_incl']; e[2].add(r['order_key'])
+
     known = {c for c, _ in CHANNELS}
     unknown = set(ch) - known
     assert not unknown, f'unmapped channels: {unknown}'
@@ -91,6 +103,12 @@ def main():
         'model': {m: {k: [ser(v[0]), round(v[1])] for k, v in kk.items()} for m, kk in model.items()},
         'vff': [[*k, round(v[0]), ser(v[1])] for k, v in sorted(vff.items())],
         'pay': {c: {m: {k: ser(v) for k, v in mm.items()} for m, mm in cm.items()} for c, cm in pay.items()},
+        'daily': {s: {d: [ser(v[0]), round(v[1]), len(v[2])] for d, v in sorted(dd.items())} for s, dd in daily.items()},
+        # invoice ids are per partner-month, so the invoice count is only summed across months, never across brands
+        'consign': [[m, p, b, mo, round(v[0]), ser(v[1])] for (m, p, b, mo), v in sorted(consign.items())],
+        'consign_inv': {f'{m}|{p}': n for (m, p), n in sorted(
+            {(m, p): len({k for (m2, p2, *_), v in consign.items() if (m2, p2) == (m, p) for k in v[2]})
+             for (m, p, *_) in consign}.items())},
         'excluded': {k: ser(v) for k, v in src['meta']['excluded_vat_incl'].items()},
         'included': {k: ser(v) for k, v in src['meta'].get('included_vat_incl', {}).items()},
     }
