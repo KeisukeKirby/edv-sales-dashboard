@@ -361,6 +361,23 @@ th .arrow{color:var(--accent);}
         <div class="box"><h3 class="sub" data-i18n="con_brand"></h3><div class="donut-wrap"><div class="chart" id="conBrandDonut"></div><div class="vlegend" id="conBrandLegend"></div></div>
           <h3 class="sub" style="margin-top:16px" data-i18n="con_model"></h3><div class="tbl-scroll" id="conModel"></div></div>
       </div>
+      <div class="box" style="margin-top:16px">
+        <div class="card-head" style="margin-bottom:8px">
+          <h3 class="sub" style="margin:0" data-i18n="conx_title"></h3>
+          <div class="controls">
+            <div class="seg" id="conxDim">
+              <button data-v="brand" class="active" data-i18n="col_brand"></button>
+              <button data-v="model" data-i18n="col_model"></button>
+            </div>
+            <div class="seg" id="conxMetric">
+              <button data-v="amt" class="active" data-i18n="m_amount"></button>
+              <button data-v="qty" data-i18n="m_qty"></button>
+            </div>
+          </div>
+        </div>
+        <div class="tbl-scroll" id="conMatrix"></div>
+        <p class="note" data-i18n="conx_note"></p>
+      </div>
       <div class="btn-row"><button class="btn-more" id="conBtn"></button></div>
       <div class="detail tbl-scroll" id="conDetail" hidden></div>
     </section>
@@ -506,6 +523,7 @@ const I18N = {
     wd_days:'日数', wd_avg:'1日平均', wd_total:'合計', col_weekday:'曜日',
     col_ym:'年月', wdm_title:'曜日別の月次売上(千THB)', wdm_note:'選んだ店舗の、月ごと・曜日ごとの売上。1日平均はその月にある該当曜日の日数で割った値。表示する月は「全ブロックの期間をまとめて変更」に合わせます。',
     s_consign:'委託販売の実績(委託先・ブランド別)', con_partner:'委託先別', con_brand:'ブランド別', con_model:'商品別',
+    conx_title:'委託先 × ブランド(商品)別の実績', conx_note:'行がブランド(または商品)、列が委託先。各委託先がどのブランド・商品をどれだけ売ったかを示します。右端は全委託先の合計、割合は委託先ごとの構成比です。',
     con_note:'委託先8社への請求額(税抜)。Consignment Other のうち委託先の分だけで、法人販売や Barefoot Inc. への請求は含みません。',
     col_partner:'委託先', col_invoices:'請求書数',
   },
@@ -557,6 +575,7 @@ const I18N = {
     wd_days:'Days', wd_avg:'Avg/day', wd_total:'Total', col_weekday:'Weekday',
     col_ym:'Month', wdm_title:'Monthly sales by weekday (THB thousand)', wdm_note:'Sales of the selected store by month and weekday. Avg/day divides by how many of that weekday the month has. Months follow the period chosen for all blocks.',
     s_consign:'Consignment by partner and brand', con_partner:'By partner', con_brand:'By brand', con_model:'By product',
+    conx_title:'Partner × brand (product)', conx_note:'Rows are brands (or products), columns are partners: how much of each brand or product each partner sold. The right-hand column totals all partners; percentages are each partner\'s own mix.',
     con_note:'Amounts invoiced to the 8 consignment partners (ex-VAT). Only the partner part of Consignment Other; B2B sales and invoices to Barefoot Inc. are not included.',
     col_partner:'Partner', col_invoices:'Invoices',
   },
@@ -608,6 +627,7 @@ const I18N = {
     wd_days:'จำนวนวัน', wd_avg:'เฉลี่ย/วัน', wd_total:'รวม', col_weekday:'วัน',
     col_ym:'เดือน', wdm_title:'ยอดขายรายเดือนตามวันในสัปดาห์ (พันบาท)', wdm_note:'ยอดขายของร้านที่เลือก แยกตามเดือนและวัน เฉลี่ย/วัน หารด้วยจำนวนวันนั้นในเดือน เดือนที่แสดงตามช่วงเวลาที่เลือกให้ทุกบล็อก',
     s_consign:'ยอดฝากขายตามร้านและแบรนด์', con_partner:'ตามร้านฝากขาย', con_brand:'ตามแบรนด์', con_model:'ตามสินค้า',
+    conx_title:'ร้านฝากขาย × แบรนด์ (สินค้า)', conx_note:'แถวคือแบรนด์ (หรือสินค้า) คอลัมน์คือร้านฝากขาย แสดงว่าแต่ละร้านขายแบรนด์หรือสินค้าใดได้เท่าไร คอลัมน์ขวาสุดคือรวมทุกร้าน เปอร์เซ็นต์คือสัดส่วนภายในร้านนั้น',
     con_note:'ยอดที่เรียกเก็บจากร้านฝากขาย 8 ราย (ไม่รวม VAT) เฉพาะส่วนฝากขายใน Consignment Other ไม่รวมการขายนิติบุคคลและใบแจ้งหนี้ถึง Barefoot Inc.',
     col_partner:'ร้านฝากขาย', col_invoices:'ใบแจ้งหนี้',
   },
@@ -894,7 +914,7 @@ function vlegend(items) { // -> html rows with data-k
 /* ------------------------------------------------------------------ state + small UI helpers */
 const S = {
   globalPeriod: 'all', kpiPeriod: 'all', sharePeriod: 'all',
-  calStore: 'K village', calMonth: M[M.length - 1], conPeriod: 'all', wdmMetric: 'tot',
+  calStore: 'K village', calMonth: M[M.length - 1], conPeriod: 'all', wdmMetric: 'tot', conxDim: 'brand', conxMetric: 'amt',
   vffChPeriod: 'all', vffChMetric: 'pairs', vffGPeriod: 'all', vffMPeriod: 'all', vffCPeriod: 'all', vffSPeriod: 'all',
   chMonthlyMetric: 'amt', chtPeriod: 'all', chtSort: { key: 'amt', dir: -1 },
   payChannel: 'all', payPeriod: 'all', chdChannel: 'K village', chdPeriod: 'all',
@@ -1100,8 +1120,14 @@ function renderChMonthly() {
   const idx = S.chMonthlyMetric === 'amt' ? 0 : 1, gs = idx ? PRODUCT_GROUPS : GROUPS;
   $('chMonthlyLegend').innerHTML = groupLegend(gs);
   barChart($('chMonthlyChart'), MV, mName, groupSeries(idx, GROUPS), monthTip(idx));
-  detailToggle('chDetailBtn', 'chDetail', () =>
-    monthTable(t('col_channel'), (idx ? PRODUCT_CH : CH).map(c => ({ label: chName(c), key: c, color: GCOLOR(GROUP_OF[c]) })), (c, ms) => chSum(c, ms)[idx]));
+  // channels across the top, months (then roll-ups) down the side
+  detailToggle('chDetailBtn', 'chDetail', () => {
+    const chs = idx ? PRODUCT_CH : CH, cols = detailCols();
+    let h = `<table><thead><tr><th>${t('col_ym')}</th>${chs.map(c => `<th style="white-space:normal;min-width:84px"><span class="name-cell">${sw(GCOLOR(GROUP_OF[c]))}${esc(chName(c))}</span></th>`).join('')}<th>${t('total')}</th></tr></thead><tbody>`;
+    cols.forEach(col => { const vs = chs.map(c => chSum(c, col.months)[idx]);
+      h += `<tr class="${col.roll ? 'period' : ''}"><td>${esc(col.roll ? col.label : col.months[0].slice(0, 4) + ' ' + mName(col.months[0]))}</td>${vs.map(v => `<td>${v ? fmt(v) : '–'}</td>`).join('')}<td><b>${fmt(vs.reduce((a, b) => a + b, 0))}</b></td></tr>`; });
+    return h + '</tbody></table>';
+  });
   detailToggle('chQtyBtn', 'chQty', null, 'qty_detail', 'qty_detail_hide');
   if (S.open.chQtyBtn) renderChTable();
 }
@@ -1239,6 +1265,20 @@ function renderConsign() {
     return monthTable(t('col_partner'), partners.map(p => ({ label: p, key: p })),
       (p, ms2) => DATA.consign.filter(r => r[1] === p && ms2.includes(r[0])).reduce((a, r) => a + r[5], 0));
   });
+
+  // partner x brand (or product): what each partner sold, with each partner's own mix in %
+  const ki = S.conxDim === 'brand' ? 2 : 3, vi = S.conxMetric === 'amt' ? 5 : 4;
+  const partners = byP.map(([p]) => p);
+  const cell = {}, rowTot = {}, colTot = {};
+  rows.forEach(r => { const k = r[ki], p = r[1];
+    cell[k + '\t' + p] = (cell[k + '\t' + p] || 0) + r[vi]; rowTot[k] = (rowTot[k] || 0) + r[vi]; colTot[p] = (colTot[p] || 0) + r[vi]; });
+  const keys = Object.keys(rowTot).sort((a, b) => rowTot[b] - rowTot[a]);
+  const grand = keys.reduce((a, k) => a + rowTot[k], 0);
+  const sw2 = k => (ki === 2 ? sw(brandColor(k)) : '');
+  $('conMatrix').innerHTML = keys.length ? `<table><thead><tr><th>${ki === 2 ? t('col_brand') : t('col_model')}</th>${partners.map(p => `<th>${esc(p)}</th>`).join('')}<th>${t('total')}</th></tr></thead><tbody>${
+    keys.map(k => `<tr><td style="white-space:normal"><span class="name-cell">${sw2(k)}${esc(ki === 2 ? bName(k) : k)}</span></td>${partners.map(p => { const v = cell[k + '\t' + p] || 0;
+      return `<td>${v ? `${fmt(v)}<div style="font-size:11px;color:var(--ink-faint)">${pct(v, colTot[p])}</div>` : '–'}</td>`; }).join('')}<td><b>${fmt(rowTot[k])}</b><div style="font-size:11px;color:var(--ink-faint)">${pct(rowTot[k], grand)}</div></td></tr>`).join('')
+    }<tr class="total"><td>${t('total')}</td>${partners.map(p => `<td>${fmt(colTot[p] || 0)}</td>`).join('')}<td>${fmt(grand)}</td></tr></tbody></table>` : `<p class="note">${t('no_data')}</p>`;
 }
 
 // brand amounts -> donut items: top 7 brands in fixed colors, the rest folded into "Others"
@@ -1479,6 +1519,8 @@ bindSelect('calMonth', 'calMonth', renderCalendar);
 bindSeg('wdmMetric', 'wdmMetric', renderCalendar);
 bindSelect('conPeriod', 'conPeriod', renderConsign);
 bindToggle('conBtn', renderConsign);
+bindSeg('conxDim', 'conxDim', renderConsign);
+bindSeg('conxMetric', 'conxMetric', renderConsign);
 
 bindSelect('brMetric', 'brMetric', renderBrand);
 bindSelect('brPeriod', 'brPeriod', renderBrand);
