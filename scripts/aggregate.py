@@ -112,9 +112,6 @@ def main():
         'excluded': {k: ser(v) for k, v in src['meta']['excluded_vat_incl'].items()},
         'included': {k: ser(v) for k, v in src['meta'].get('included_vat_incl', {}).items()},
     }
-    # Barefoot Inc. -> partner invoices (reference only, never added to EDV totals; amounts already ex-VAT)
-    bft = ROOT / 'data' / 'bft_partners.json'
-    out['bft_partners'] = json.loads(bft.read_text(encoding='utf-8')) if bft.exists() else {}
     apply_confirmed_adjustments(out)
     OUT.write_text(json.dumps(out, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
 

@@ -13,7 +13,6 @@ Endeavors Co., Ltd.(EDV)の売上実績。EDV の収入表(Before Vat)を正と�
 
 ```
 python scripts/etl.py   # data/raw/ の order_detail_*.xlsx をすべて読み込んで結合(同じ月が2ファイルにあるとエラー)
-python scripts/etl_bft_partners.py   # 任意: data/raw/bft_partners/<委託先>.xlsx(Barefoot Inc. の請求書レポート)→ 参考表示用
 python scripts/aggregate.py
 python scripts/build.py
 ```
