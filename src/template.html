@@ -385,20 +385,6 @@ th .arrow{color:var(--accent);}
       </div>
       <div class="btn-row"><button class="btn-more" id="conBtn"></button></div>
       <div class="detail tbl-scroll" id="conDetail" hidden></div>
-      <div class="box" id="bpBox" style="margin-top:18px;border-color:var(--accent)">
-        <div class="card-head" style="margin-bottom:6px">
-          <h3 class="sub" style="margin:0;color:var(--ink)" data-i18n="bp_title"></h3>
-          <div class="controls"><select id="bpPartner"></select></div>
-        </div>
-        <p class="note top" style="margin-top:0" data-i18n="bp_note"></p>
-        <div class="note top" id="bpSummary"></div>
-        <div class="grid2">
-          <div><h3 class="sub" data-i18n="bp_monthly"></h3><div class="legend" id="bpLegend"></div><div class="chart" id="bpChart"></div></div>
-          <div class="tbl-scroll"><h3 class="sub" data-i18n="bp_month_tbl"></h3><div id="bpMonthTable"></div></div>
-        </div>
-        <h3 class="sub" style="margin-top:14px" data-i18n="bp_products"></h3>
-        <div class="tbl-scroll" id="bpProducts"></div>
-      </div>
     </section>
     <section class="card">
       <div class="card-head">
@@ -545,10 +531,6 @@ const I18N = {
     conx_title:'委託先 × ブランド(商品)別の実績', conx_note:'行がブランド(または商品)、列が委託先。各委託先がどのブランド・商品をどれだけ売ったかを示します。右端は全委託先の合計、割合は委託先ごとの構成比です。',
     con_note:'委託先8社への請求額(税抜)。Consignment Other のうち委託先の分だけで、法人販売や Barefoot Inc. への請求は含みません。',
     col_partner:'委託先', col_invoices:'請求書数',
-    bp_title:'Barefoot Inc. → 委託先 卸実績(参考)', bp_monthly:'月別 卸値(税抜, THB)', bp_month_tbl:'月別の請求', bp_products:'商品別・月別 卸値(税抜, THB)',
-    bp_note:'Barefoot Inc. が委託先に発行した請求書の実績です。EDV の売上ではないため、ダッシュボードの合計には含めていません。金額は値引後の卸値(税抜)、月は請求書の発行日です。',
-    bp_sum_fmt:'請求書 {n} 件 · {qty} 点 · 卸値 {net} THB(税抜)· 税込 {grand} THB{unpaid} · 出典 {src}(出力 {exp})', bp_unpaid_fmt:' · 未入金 {amt} THB({n} 件)',
-    col_net:'卸値(税抜)', col_grand:'税込', col_status:'状態', st_unpaid:'未入金',
   },
   en: {
     title:'EDV Sales Performance Dashboard',
@@ -601,10 +583,6 @@ const I18N = {
     conx_title:'Partner × brand (product)', conx_note:'Rows are brands (or products), columns are partners: how much of each brand or product each partner sold. The right-hand column totals all partners; percentages are each partner\'s own mix.',
     con_note:'Amounts invoiced to the 8 consignment partners (ex-VAT). Only the partner part of Consignment Other; B2B sales and invoices to Barefoot Inc. are not included.',
     col_partner:'Partner', col_invoices:'Invoices',
-    bp_title:'Barefoot Inc. → partner wholesale (reference)', bp_monthly:'Monthly wholesale (ex-VAT, THB)', bp_month_tbl:'Invoices by month', bp_products:'By product and month (wholesale ex-VAT, THB)',
-    bp_note:'Invoices Barefoot Inc. issued to the partner. These are not EDV sales, so they are not included in any dashboard total. Amounts are discounted wholesale prices ex-VAT; months follow the invoice date.',
-    bp_sum_fmt:'{n} invoices · {qty} units · wholesale {net} THB ex-VAT · {grand} THB incl. VAT{unpaid} · source {src} (exported {exp})', bp_unpaid_fmt:' · unpaid {amt} THB ({n})',
-    col_net:'Wholesale (ex-VAT)', col_grand:'Incl. VAT', col_status:'Status', st_unpaid:'Unpaid',
   },
   th: {
     title:'แดชบอร์ดยอดขาย EDV',
@@ -657,10 +635,6 @@ const I18N = {
     conx_title:'ร้านฝากขาย × แบรนด์ (สินค้า)', conx_note:'แถวคือแบรนด์ (หรือสินค้า) คอลัมน์คือร้านฝากขาย แสดงว่าแต่ละร้านขายแบรนด์หรือสินค้าใดได้เท่าไร คอลัมน์ขวาสุดคือรวมทุกร้าน เปอร์เซ็นต์คือสัดส่วนภายในร้านนั้น',
     con_note:'ยอดที่เรียกเก็บจากร้านฝากขาย 8 ราย (ไม่รวม VAT) เฉพาะส่วนฝากขายใน Consignment Other ไม่รวมการขายนิติบุคคลและใบแจ้งหนี้ถึง Barefoot Inc.',
     col_partner:'ร้านฝากขาย', col_invoices:'ใบแจ้งหนี้',
-    bp_title:'Barefoot Inc. → ร้านฝากขาย ยอดขายส่ง (อ้างอิง)', bp_monthly:'ยอดขายส่งรายเดือน (ไม่รวม VAT, บาท)', bp_month_tbl:'ใบแจ้งหนี้รายเดือน', bp_products:'ตามสินค้าและเดือน (ขายส่ง ไม่รวม VAT, บาท)',
-    bp_note:'ใบแจ้งหนี้ที่ Barefoot Inc. ออกให้ร้านฝากขาย ไม่ใช่ยอดขายของ EDV จึงไม่รวมในยอดรวมใดๆ ของแดชบอร์ด ยอดเงินเป็นราคาขายส่งหลังส่วนลด ไม่รวม VAT เดือนตามวันที่ออกใบแจ้งหนี้',
-    bp_sum_fmt:'ใบแจ้งหนี้ {n} ใบ · {qty} ชิ้น · ขายส่ง {net} บาท (ไม่รวม VAT) · รวม VAT {grand} บาท{unpaid} · ที่มา {src} (ส่งออก {exp})', bp_unpaid_fmt:' · ยังไม่ชำระ {amt} บาท ({n} ใบ)',
-    col_net:'ขายส่ง (ไม่รวม VAT)', col_grand:'รวม VAT', col_status:'สถานะ', st_unpaid:'ยังไม่ชำระ',
   },
 };
 // weekday labels, Monday first (calendar + weekday chart)
@@ -945,7 +919,7 @@ function vlegend(items) { // -> html rows with data-k
 /* ------------------------------------------------------------------ state + small UI helpers */
 const S = {
   globalPeriod: 'all', kpiPeriod: 'all', sharePeriod: 'all',
-  calStore: 'K village', calMonth: M[M.length - 1], conPeriod: 'all', wdmMetric: 'tot', wdmStore: 'all', conxDim: 'brand', conxMetric: 'amt', bpPartner: Object.keys(DATA.bft_partners || {})[0] || '',
+  calStore: 'K village', calMonth: M[M.length - 1], conPeriod: 'all', wdmMetric: 'tot', wdmStore: 'all', conxDim: 'brand', conxMetric: 'amt',
   vffChPeriod: 'all', vffChMetric: 'pairs', vffGPeriod: 'all', vffMPeriod: 'all', vffCPeriod: 'all', vffSPeriod: 'all',
   chMonthlyMetric: 'amt', chtPeriod: 'all', chtSort: { key: 'amt', dir: -1 },
   payChannel: 'all', payPeriod: 'all', chdChannel: 'K village', chdPeriod: 'all',
@@ -1327,47 +1301,6 @@ function renderConsign() {
     }<tr class="total"><td>${t('total')}</td>${partners.map(p => `<td>${fmt(colTot[p] || 0)}</td>`).join('')}<td>${fmt(grand)}</td></tr></tbody></table>` : `<p class="note">${t('no_data')}</p>`;
 }
 
-/* ------------------------------------------------------------------ Barefoot Inc. -> partner invoices (reference, not EDV) */
-// this data can run past EDV's last month, so periods are resolved against its own months
-function monthsForPeriod(id, months) {
-  if (id === 'all') return months;
-  if (id === 'h1') return months.filter(m => +m.slice(5) <= 6);
-  const q = /^q([1-4])$/.exec(id);
-  if (q) return months.filter(m => Math.ceil(+m.slice(5) / 3) === +q[1]);
-  return months.filter(m => m === id);
-}
-function renderBftPartner() {
-  const all = DATA.bft_partners || {}, p = all[S.bpPartner];
-  $('bpBox').hidden = !p;
-  if (!p) return;
-  const months = [...new Set(p.invoices.map(i => i[1]))].sort();
-  const ms = monthsForPeriod(S.conPeriod, months), inMs = new Set(ms);
-  const invs = p.invoices.filter(i => inMs.has(i[1])); // [no, month, status, net ex-VAT, grand, list]
-  const lines = p.lines.filter(l => inMs.has(l[0]));   // [month, brand, model, units, net ex-VAT]
-  const net = invs.reduce((a, i) => a + i[3], 0), grand = invs.reduce((a, i) => a + i[4], 0), qty = lines.reduce((a, l) => a + l[3], 0);
-  const unpaid = invs.filter(i => i[2] !== 'Paid');
-  $('bpSummary').textContent = invs.length ? tf('bp_sum_fmt', { n: invs.length, qty: fmt(qty), net: fmt(net), grand: fmt(grand), src: p.source, exp: p.exported.split(' ')[0],
-    unpaid: unpaid.length ? tf('bp_unpaid_fmt', { amt: fmt(unpaid.reduce((a, i) => a + i[4], 0)), n: unpaid.length }) : '' }) : t('no_data');
-  // monthly chart, stacked by brand in the dashboard's fixed brand colors
-  const brands = [...new Set(lines.map(l => l[1]))].sort((a, b) => DATA.brands.indexOf(a) - DATA.brands.indexOf(b));
-  const series = brands.map(b => ({ key: b, color: brandColor(b), values: ms.map(m => lines.filter(l => l[0] === m && l[1] === b).reduce((a, l) => a + l[4], 0)) }));
-  $('bpLegend').innerHTML = series.map(s => `<span>${sw(s.color)}${esc(bName(s.key))}</span>`).join('');
-  barChart($('bpChart'), ms, mName, series, i => `<div class="t">${esc(ms[i].slice(0, 4) + ' ' + mName(ms[i]))}</div>` +
-    series.filter(s => s.values[i]).map(s => `<div class="r"><span>${sw(s.color)}${esc(bName(s.key))}</span><span>${fmt(s.values[i])}</span></div>`).join(''));
-  // invoices by month
-  let h = `<table><thead><tr><th>${t('col_ym')}</th><th>${t('col_invoices')}</th><th>${t('col_qty')}</th><th>${t('col_net')}</th><th>${t('col_grand')}</th><th>${t('col_status')}</th></tr></thead><tbody>`;
-  ms.forEach(m => { const iv = invs.filter(i => i[1] === m), u = iv.filter(i => i[2] !== 'Paid');
-    h += `<tr><td>${esc(m.slice(0, 4) + ' ' + mName(m))}</td><td>${iv.length}</td><td>${fmt(lines.filter(l => l[0] === m).reduce((a, l) => a + l[3], 0))}</td><td>${fmt(iv.reduce((a, i) => a + i[3], 0))}</td><td>${fmt(iv.reduce((a, i) => a + i[4], 0))}</td><td>${u.length ? `<span style="color:var(--danger)">${t('st_unpaid')} ${u.length}</span>` : '–'}</td></tr>`; });
-  $('bpMonthTable').innerHTML = h + `<tr class="total"><td>${t('total')}</td><td>${invs.length}</td><td>${fmt(qty)}</td><td>${fmt(net)}</td><td>${fmt(grand)}</td><td>${unpaid.length ? `${t('st_unpaid')} ${unpaid.length}` : ''}</td></tr></tbody></table>`;
-  // products x months
-  const keyOf = l => l[1] + '\t' + l[2];
-  const prods = [...new Set(lines.map(keyOf))].map(k => ({ k, b: k.split('\t')[0], m: k.split('\t')[1],
-    amt: lines.filter(l => keyOf(l) === k).reduce((a, l) => a + l[4], 0), qty: lines.filter(l => keyOf(l) === k).reduce((a, l) => a + l[3], 0) })).sort((a, b) => b.amt - a.amt);
-  $('bpProducts').innerHTML = prods.length ? `<table><thead><tr><th>${t('col_model')}</th>${ms.map(m => `<th>${esc(mName(m))}</th>`).join('')}<th>${t('col_net')}</th><th>${t('col_qty')}</th><th>${t('col_share')}</th></tr></thead><tbody>${
-    prods.map(x => `<tr><td style="white-space:normal"><span class="name-cell">${sw(brandColor(x.b))}${esc(x.m)}</span></td>${ms.map(m => { const v = lines.filter(l => l[0] === m && keyOf(l) === x.k).reduce((a, l) => a + l[4], 0); return `<td>${v ? fmt(v) : '–'}</td>`; }).join('')}<td><b>${fmt(x.amt)}</b></td><td>${fmt(x.qty)}</td><td>${pct(x.amt, net)}</td></tr>`).join('')
-    }<tr class="total"><td>${t('total')}</td>${ms.map(m => `<td>${fmt(lines.filter(l => l[0] === m).reduce((a, l) => a + l[4], 0))}</td>`).join('')}<td>${fmt(net)}</td><td>${fmt(qty)}</td><td>100%</td></tr></tbody></table>` : `<p class="note">${t('no_data')}</p>`;
-}
-
 // brand amounts -> donut items: top 7 brands in fixed colors, the rest folded into "Others"
 function brandItems(bs) {
   const items = TOP_BRANDS.map(b => ({ key: b, label: b, color: brandColor(b), value: bs[b] || 0 }));
@@ -1544,7 +1477,7 @@ const ABOUT_EXTRA = {
 // every per-section period dropdown (state key == select id); the global one overrides them all
 const PERIOD_KEYS = ['kpiPeriod', 'sharePeriod', 'vffChPeriod', 'vffGPeriod', 'vffMPeriod', 'vffCPeriod', 'vffSPeriod', 'chtPeriod', 'conPeriod', 'payPeriod', 'chdPeriod', 'brPeriod', 'cbPeriod', 'rkPeriod', 'bdPeriod'];
 const RENDERERS = [renderSummary, renderMonthly, renderVffStore, renderVffChannel, renderVffGender, renderVffModels, renderVffColors, renderVffSizes,
-  renderChMonthly, renderShare, renderCalendar, renderConsign, renderBftPartner, renderPay, renderChDetail, renderBrand, renderChannelBrand, renderRanking, renderBrandDetail, renderVSoul];
+  renderChMonthly, renderShare, renderCalendar, renderConsign, renderPay, renderChDetail, renderBrand, renderChannelBrand, renderRanking, renderBrandDetail, renderVSoul];
 function renderAll() {
   document.documentElement.lang = LANG;
   document.title = t('title');
@@ -1560,7 +1493,6 @@ function renderAll() {
   fillSelect('chdChannel', CH.map(c => ({ id: c, label: chName(c) })), S.chdChannel);
   fillSelect('calStore', Object.keys(DATA.daily).sort((a, b) => CH.indexOf(a) - CH.indexOf(b)).map(c => ({ id: c, label: chName(c) })), S.calStore);
   fillSelect('calMonth', M.slice().reverse().map(m => ({ id: m, label: `${m.slice(0, 4)} ${mName(m)}` })), S.calMonth);
-  fillSelect('bpPartner', Object.keys(DATA.bft_partners || {}).map(p => ({ id: p, label: p })), S.bpPartner);
   fillSelect('wdmStore', [{ id: 'all', label: t('wdm_all') }, ...Object.keys(DATA.daily).sort((a, b) => CH.indexOf(a) - CH.indexOf(b)).map(c => ({ id: c, label: chName(c) }))], S.wdmStore);
   fillSelect('cbChannel', PRODUCT_CH.map(c => ({ id: c, label: chName(c) })), S.cbChannel);
   fillSelect('bdBrand', DATA.brands.map(b => ({ id: b, label: bName(b) })), S.bdBrand);
@@ -1607,11 +1539,10 @@ bindSelect('calStore', 'calStore', renderCalendar);
 bindSelect('calMonth', 'calMonth', renderCalendar);
 bindSeg('wdmMetric', 'wdmMetric', renderWeekdayByMonth);
 bindSelect('wdmStore', 'wdmStore', renderWeekdayByMonth);
-bindSelect('conPeriod', 'conPeriod', () => { renderConsign(); renderBftPartner(); });
+bindSelect('conPeriod', 'conPeriod', renderConsign);
 bindToggle('conBtn', renderConsign);
 bindSeg('conxDim', 'conxDim', renderConsign);
 bindSeg('conxMetric', 'conxMetric', renderConsign);
-bindSelect('bpPartner', 'bpPartner', renderBftPartner);
 
 bindSelect('brMetric', 'brMetric', renderBrand);
 bindSelect('brPeriod', 'brPeriod', renderBrand);
